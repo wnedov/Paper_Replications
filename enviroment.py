@@ -25,12 +25,6 @@ class MapEnv:
         shapely.plotting.plot_polygon(self.obstacle, self.ax, color="red", add_points=False);
         plt.show(); 
 
-
-if __name__ == "__main__":
-    map = MapEnv(); 
-    map.plot();
-
-
         
 
 
