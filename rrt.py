@@ -57,8 +57,17 @@ class RRT:
         
         return not(line.intersects(self.env.obstacle));
 
+    def get_path_coords(self, goal_node):
+        path = []
+        curr = goal_node
+        while curr is not None:
+            path.append(curr.get_loc())
+            curr = curr.get_parent()
+        return np.array(path[::-1])
+
     def rrt(self): 
         V = [self.start];
+        E = []
         for i in range(0, self.iterations):
             rand = self.sample();
             while rand is None: 
@@ -68,4 +77,12 @@ class RRT:
             new = self.Steer(nearest, rand); 
             if self.CollisionTest(nearest, new):
                 V.append(new);
+                E.append([nearest.get_loc(), new.get_loc()])
+
+                if i % 50 == 0:
+                    self.env.update(E)
+                    self.env.save_frame(i)
+
+        self.env.update(E);
+        self.env.save_frame(self.iterations);
         return V;

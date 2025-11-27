@@ -11,4 +11,6 @@ wheels/
 .DS_Store 
 .vscode 
 uv.lock
-
+frames
+frames2
+tmp
