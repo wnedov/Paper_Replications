@@ -37,14 +37,3 @@ class MapEnv:
         y = path_coords[:, 1] 
         
         self.ax.plot(x, y, color="red", linewidth=3, zorder=10)
-        self.fig.canvas.draw()
-        plt.pause(0.01)
-
-
-        
-
-
-
-
-
- 
