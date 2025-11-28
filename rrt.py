@@ -110,7 +110,7 @@ class RRT_A(RRT):
             nearest = self.NearestNeighbour(V, rand);
             new = self.Steer(nearest, rand); 
             if self.CollisionTest(nearest, new):
-                y = 20 #Change according to random formula
+                y = 20 # Change according to random formula
                 r = min(y*(np.log(len(V))/len(V))**(1/2), self.step);
                 nearNodes = self.NearVertices(V, new, r)
                 V.append(new); 
@@ -125,18 +125,20 @@ class RRT_A(RRT):
 
                 new.parent = xmin
                 new.cost = cmin
-                E.append([xmin.get_loc(), new.get_loc()])
 
                 for near in nearNodes: 
                     cost = new.cost + np.linalg.norm(new.get_loc() - near.get_loc())
                     if self.CollisionTest(new, near) and cost < near.cost:
-                        parent = near.parent;
                         near.parent = new
                         near.cost = cost
-                        E = [[node.parent.get_loc(), node.get_loc()] for node in V if node.parent is not parent]
                     
             if i % 50 == 0:
+                E = [[node.parent.get_loc(), node.get_loc()] for node in V if node.parent is not None]
                 self.env.update(E)
                 self.env.save_frame(i)
+        
+        E = [[node.parent.get_loc(), node.get_loc()] for node in V if node.parent is not None]
+        self.env.update(E);
+        self.env.save_frame(self.iterations);
         return V;
                           
