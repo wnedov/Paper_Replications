@@ -85,9 +85,23 @@ class RRT:
                 V.append(new);
                 E.append([nearest.get_loc(), new.get_loc()])
 
-                if i % 50 == 0:
-                    self.env.update(E)
-                    self.env.save_frame(i)
+            save_frame = False
+                
+            if i < 500:
+                if i % 10 == 0: save_frame = True
+            elif i < 2500:
+                if i % 50 == 0: save_frame = True
+            elif i < 10000:
+                if i % 200 == 0: save_frame = True
+            else:
+                if i % 500 == 0: save_frame = True
+            
+            if i in [250, 500, 2500, 10000, 20000]:
+                save_frame = True
+
+            if save_frame:
+                self.env.update(E)
+                self.env.save_frame(i)
 
         self.env.update(E);
         self.env.save_frame(self.iterations);
@@ -132,7 +146,21 @@ class RRT_A(RRT):
                         near.parent = new
                         near.cost = cost
                     
-            if i % 50 == 0:
+            save_frame = False
+            
+            if i < 500:
+                if i % 10 == 0: save_frame = True
+            elif i < 2500:
+                if i % 50 == 0: save_frame = True
+            elif i < 10000:
+                if i % 200 == 0: save_frame = True
+            else:
+                if i % 500 == 0: save_frame = True
+            
+            if i in [250, 500, 2500, 10000, 20000]:
+                save_frame = True
+
+            if save_frame:
                 E = [[node.parent.get_loc(), node.get_loc()] for node in V if node.parent is not None]
                 self.env.update(E)
                 self.env.save_frame(i)

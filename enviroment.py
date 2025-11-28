@@ -3,10 +3,18 @@ import shapely.plotting
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.collections as c
+import shutil 
+import os
 
 class MapEnv:
 
-    def __init__(self): 
+    def __init__(self, frame_dir): 
+        
+        self.frame_dir = "tmp"
+        if os.path.exists(self.frame_dir):
+            shutil.rmtree(self.frame_dir)
+        os.makedirs(self.frame_dir)
+
         self.border = shapely.box(-10,-10,10,10);
         self.start = (0,0); 
         self.end = shapely.box(7,7,9,9);

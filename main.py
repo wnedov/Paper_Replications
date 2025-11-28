@@ -20,16 +20,16 @@ def run_planner(planner_class, env, n_iter, step_size):
         
         path = planner.get_path_coords(best_node)
         env.draw_path(path)
-        env.save_frame(1001)
+        env.save_frame(n_iter + 1)
     else:
         print("No path found.")
 
 def main():
-    env = MapEnv()
+    env = MapEnv("tmp")
     
-    ITERATIONS = 10000
+    ITERATIONS = 20000
     STEP_SIZE = 0.5
-    SELECTED_ALGORITHM = RRT 
+    SELECTED_ALGORITHM = RRT_A
 
     run_planner(SELECTED_ALGORITHM, env, ITERATIONS, STEP_SIZE)
     
