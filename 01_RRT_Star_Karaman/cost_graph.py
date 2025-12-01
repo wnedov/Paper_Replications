@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from enviroment import MapEnv
+from common.environment import MapEnv
 from rrt import RRT, RRT_A
 
 def run_experiment():

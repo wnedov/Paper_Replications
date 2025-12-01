@@ -1,4 +1,4 @@
-from enviroment import *
+from common.environment import *
 from rrt import *
 
 def run_planner(planner_class, env, n_iter, step_size):

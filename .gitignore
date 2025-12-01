@@ -13,7 +13,10 @@ __pycache__/
 other/
 
 # Ignore generated plots and GIFs
-# (You should Force Add specific 'hero' images for your README manually)
 *.png
 *.gif
 *.pdf
+
+common/common.egg-info/
+
+

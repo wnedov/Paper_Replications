@@ -5,7 +5,16 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "common",
     "matplotlib>=3.10.7",
     "numpy>=2.3.5",
     "shapely>=2.1.2",
 ]
+
+[tool.uv.workspace]
+members = [
+    "common",
+]
+
+[tool.uv.sources]
+common = { workspace = true, editable = true }
