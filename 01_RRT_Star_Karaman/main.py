@@ -37,6 +37,7 @@ def main():
     STEP_SIZE = 0.5
 
     env = MapEnv() 
+    env.draw_elements()
 
     if MODE == "BOTH":
         temp_env = MapEnv() 

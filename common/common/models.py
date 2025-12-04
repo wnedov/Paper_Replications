@@ -1,6 +1,6 @@
 import numpy as np
 
-class Unicycle: 
+class UnicycleModel: 
 
     def __init__(self, x=0, y=0, theta=0):
         self.state = np.array([x, y, theta], dtype=float)

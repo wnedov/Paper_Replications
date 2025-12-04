@@ -24,10 +24,6 @@ class MapEnv:
         self.lines = c.LineCollection([], color="green", alpha=0.5)
         self.ax.add_collection(self.lines);
     
-        shapely.plotting.plot_polygon(self.end, self.ax, color="purple", add_points=False);
-        shapely.plotting.plot_polygon(self.obstacle, self.ax, color="red", add_points=False);
-        self.ax.scatter([self.start[0]], [self.start[1]], color="blue", zorder=5);
-    
     def draw_tree(self, seg):
         self.lines.set_segments(seg);
 
@@ -36,3 +32,9 @@ class MapEnv:
         y = path_coords[:, 1] 
         
         self.ax.plot(x, y, color="red", linewidth=3, zorder=10)
+
+
+    def draw_elements(self):
+        shapely.plotting.plot_polygon(self.end, self.ax, color="purple", add_points=False);
+        shapely.plotting.plot_polygon(self.obstacle, self.ax, color="red", add_points=False);
+        self.ax.scatter([self.start[0]], [self.start[1]], color="blue", zorder=5);
