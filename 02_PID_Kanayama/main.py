@@ -1,11 +1,9 @@
-from ghost import ReferenceGhost
+from common.trajectories import ReferenceGhost
 from controller import KanayamaControl
 from common.models import UnicycleModel
 from common.environment import MapEnv
 import numpy as np
 import matplotlib.pyplot as plt
-import io
-from PIL import Image
 
 def save_error_plot(time, ye, thetae):
     plt.figure(figsize=(10, 6))
