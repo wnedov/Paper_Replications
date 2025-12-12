@@ -72,7 +72,7 @@ def main():
 
     for step in range(time_steps):
         t = step * dt
-        ref_state = ghost.refStep(t)
+        ref_state = ghost.refState(t)
         control_inputs = controller.compute_control(robot.state, ref_state)
         robot.step(control_inputs, dt)
 
