@@ -4,16 +4,13 @@ import cvxpy as cp
 
 class KongMPC:
 
-    def __init__(self, Q, R, Rbar):
+    def __init__(self, Q, R, Rbar, model):
         self.Q = Q
         self.R = R
         self.Rbar = Rbar
         self.problem = None
-    
-    def linearize(self, state, control):
-        for s in state: 
-            # numerical linearization
-            pass
+        self.model = model
+            
     
     def create_problem(self, state, ref_traj, N):
         xreff, ureff = ref_traj
@@ -27,13 +24,13 @@ class KongMPC:
 
         cost = 0
         constraints = [x[:, 0] == state]
-        # also, need to add constraints on steering angle, acceleration?
+        # constraints on steering angle, acceleration?
         constraints += [u[0,:] <= 1.0]
         constraints += [u[0,:] >= -1.5]
         constraints += [cp.abs(self.var_u[1, :]) <= np.deg2rad(37)]
 
         for k in range(N): 
-            A, B = self.linearize(state, uref[:, k]);
+            A, B = self.model.linearize(state, uref[:, k]); 
 
             cost += cp.quad_form(x[:, k] - xref[:, k], self.Q)
             cost += cp.quad_form(u[:, k] - uref[:, k], self.R)
