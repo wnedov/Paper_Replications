@@ -53,7 +53,7 @@ class ReferenceGhost:
                 omega = state[4]
 
                 steerref = np.arctan2(omega * self.L, v)
-                state_next = self.refStep(t + dt)
+                state_next = self.refState(t + dt)
                 v_next = state_next[3]
                     
                 a_ref = (v_next - v) / dt

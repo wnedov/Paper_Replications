@@ -59,7 +59,7 @@ class BicycleModel:
     def discrete_dynamics(self, state, control, dt):
         return state + self.dynamics(state, control) * dt
 
-    def linearize(self, state, control):
+    def linearize(self, state, control, dt):
     # TODO: I should probably use torch here, but its numerical for now.
         EPSILON = 1e-5
         n_states = state.shape[0]
@@ -71,15 +71,15 @@ class BicycleModel:
         for i in range(n_states):
             dx = np.zeros(n_states)
             dx[i] = EPSILON
-            f1 = self.discrete_dynamics(state + dx, control)
-            f2 = self.discrete_dynamics(state - dx, control)
+            f1 = self.discrete_dynamics(state + dx, control, dt)
+            f2 = self.discrete_dynamics(state - dx, control, dt)
             A[:, i] = (f1 - f2) / (2 * EPSILON)
 
         for i in range(n_controls):
             du = np.zeros(n_controls)
             du[i] = EPSILON
-            f1 = self.discrete_dynamics(state, control + du)
-            f2 = self.discrete_dynamics(state, control - du)
+            f1 = self.discrete_dynamics(state, control + du, dt)
+            f2 = self.discrete_dynamics(state, control - du, dt)
             B[:, i] = (f1 - f2) / (2 * EPSILON)
 
         return A, B
