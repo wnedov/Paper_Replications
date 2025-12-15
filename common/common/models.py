@@ -20,7 +20,7 @@ class UnicycleModel:
     
 class BicycleModel: 
 
-    def __init__(self, x=0, y=0, psi=0, v=0, lf=1.5, lr=1.5):
+    def __init__(self, x=0, y=0, psi=0, v=0, lf=1.105, lr=1.738):
         self.state = np.array([x, y, psi, v], dtype=float)
         self.lf = lf
         self.lr = lr
@@ -84,3 +84,78 @@ class BicycleModel:
 
         return A, B
     
+class DynamicBicycleModel(BicycleModel):
+    def __init__(self, x=0, y=0, psi=0, vx=0, vy=0, r=0, lf=1.105, lr=1.738, tyre_model='linear'):
+        self.state = np.array([x, y, psi, vx, vy, r], dtype=float)
+        self.lr = lr 
+        self.lf = lf 
+        self.tyre_model = tyre_model
+
+        self.m = 1650.0      
+        self.Iz = 3000.0     
+        self.g = 9.81
+
+        # These are PER TIRE. The step function sums them or multiplies by 2.
+        self.Cf = 60000.0   
+        self.Cr = 90000.0   
+
+    def step(self, control, dt):
+        x, y, psi, vx, vy, r = self.state
+        ax, delta = control
+
+        if abs(vx) > 0.1:
+            alpha_f = np.arctan2((vy + self.lf * r), vx) - delta
+            alpha_r = np.arctan2((vy - self.lr * r), vx)
+        else:
+            alpha_f = 0.0
+            alpha_r = 0.0
+        
+        Fcf, Fcr = self.tire_forces(alpha_f, alpha_r)
+
+        vx_dot = r * vy + ax 
+        vy_dot = -r*vx + 2/self.m * (Fcf * np.cos(delta) + Fcr)
+        r_dot = 2/self.Iz * (self.lf * Fcf - self.lr * Fcr)
+        x_dot = vx * np.cos(psi) - vy * np.sin(psi)
+        y_dot = vx * np.sin(psi) + vy * np.cos(psi)
+
+        x += x_dot * dt
+        y += y_dot * dt
+        psi += r * dt
+        vx += vx_dot * dt
+        vy += vy_dot * dt
+        r += r_dot * dt
+
+        psi = (psi + np.pi) % (2 * np.pi) - np.pi
+        self.state = np.array([x, y, psi, vx, vy, r], dtype=float)
+        return self.state
+    
+    def dynamics(self, state, control):
+        x, y, psi, vx, vy, r = state
+        ax, delta = control
+
+        if abs(vx) > 0.1:
+            alpha_f = np.arctan2((vy + self.lf * r), vx) - delta
+            alpha_r = np.arctan2((vy - self.lr * r), vx)
+        else:
+            alpha_f = 0.0
+            alpha_r = 0.0
+        
+        Fcf, Fcr = self.tire_forces(alpha_f, alpha_r)
+
+        d_vx = r * vy + ax 
+        d_vy = -r*vx + 2/self.m * (Fcf * np.cos(delta) + Fcr)
+        d_rdot = 2/self.Iz * (self.lf * Fcf - self.lr * Fcr)
+        dx = vx * np.cos(psi) - vy * np.sin(psi)
+        dy = vx * np.sin(psi) + vy * np.cos(psi)
+
+        return np.array([dx, dy, r, d_vx, d_vy, d_rdot], dtype=float)
+
+    def tire_forces(self, alpha_f, alpha_r):
+        if self.tyre_model == 'linear':
+            Fcf = -self.Cf * alpha_f
+            Fcr = -self.Cr * alpha_r
+        elif self.tyre_model == 'Pacejka':
+            pass 
+        
+        
+        return Fcf, Fcr
