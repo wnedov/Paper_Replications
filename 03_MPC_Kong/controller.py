@@ -1,7 +1,6 @@
 import numpy as np 
 import cvxpy as cp
 
-
 class KongMPC:
 
     def __init__(self, Q, R, Rbar, N, dt):
@@ -46,15 +45,28 @@ class KongMPC:
         self.problem = cp.Problem(cp.Minimize(cost), constraints);
 
     def compute_control(self, state, xref, uref, model, dt):
+        self.create_problem()
         
         self.x0.value = state
-        self.xref.value = xref
+
+        xref_unwrapped = xref.copy()
+    
+        psi_diff = xref_unwrapped[2, 0] - state[2]
+        psi_diff_wrapped = (psi_diff + np.pi) % (2 * np.pi) - np.pi
+        xref_unwrapped[2, 0] = state[2] + psi_diff_wrapped
+    
+        for k in range(1, self.N + 1):
+            psi_diff = xref_unwrapped[2, k] - xref_unwrapped[2, k-1]
+            psi_diff_wrapped = (psi_diff + np.pi) % (2 * np.pi) - np.pi
+            xref_unwrapped[2, k] = xref_unwrapped[2, k-1] + psi_diff_wrapped
+    
+        self.xref.value = xref_unwrapped
         self.uref.value = uref
 
         for k in range(self.N):
             self.A[k].value, self.B[k].value = model.linearize(xref[:,k], uref[:,k], dt)
 
-        self.problem.solve(solver=cp.OSQP)
+        self.problem.solve(solver=cp.OSQP, warm_start=False, ignore_dpp=True)
         
         if self.problem.status in ['optimal', 'optimal_inaccurate']:
             return self.u[:, 0].value
