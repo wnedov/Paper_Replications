@@ -151,11 +151,24 @@ class DynamicBicycleModel(BicycleModel):
         return np.array([dx, dy, r, d_vx, d_vy, d_rdot], dtype=float)
 
     def tire_forces(self, alpha_f, alpha_r):
-        if self.tyre_model == 'linear':
+        # Normalize tire model name to lowercase for robustness
+        tire_model = self.tyre_model.lower()
+        
+        if tire_model == 'linear':
             Fcf = -self.Cf * alpha_f
             Fcr = -self.Cr * alpha_r
-        elif self.tyre_model == 'Pacejka':
-            pass 
-        
+        elif tire_model == 'pacejka':
+            Fz_f = (self.m * 9.81 * self.lr) / (self.lf + self.lr) / 2
+            Fz_r = (self.m * 9.81 * self.lf) / (self.lf + self.lr) / 2
+            mu = 1.0
+            B = 10.0
+            C = 1.3
+            Df = mu * Fz_f
+            Dr = mu * Fz_r
+            E = 0.97
+            Fcf = -Df * np.sin(C * np.arctan(B * alpha_f - E * (B * alpha_f - np.arctan(B * alpha_f))))
+            Fcr = -Dr * np.sin(C * np.arctan(B * alpha_r - E * (B * alpha_r - np.arctan(B * alpha_r))))
+        else:
+            raise ValueError(f"Unknown tire model: '{self.tyre_model}'. Use 'linear' or 'pacejka'.")
         
         return Fcf, Fcr
