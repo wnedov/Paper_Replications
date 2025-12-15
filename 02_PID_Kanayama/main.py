@@ -4,8 +4,11 @@ from common.models import UnicycleModel
 from common.environment import MapEnv
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+import io
+from PIL import Image
 
-def save_error_plot(time, ye, thetae):
+def save_error_plot(time, ye, thetae, save_path=None):
     plt.figure(figsize=(10, 6))
     
     plt.subplot(2, 1, 1)
@@ -24,9 +27,10 @@ def save_error_plot(time, ye, thetae):
     plt.xlabel("Time (s)")
     plt.grid(True)
 
+    if save_path:
+        plt.savefig(save_path)
 
-    
-    plt.show()
+    # plt.show()
 
 
 def draw_robot(ax, state, color='blue', label=None):
@@ -40,6 +44,11 @@ def draw_robot(ax, state, color='blue', label=None):
 
 
 def main():
+
+    results_dir = "results"
+    os.makedirs(results_dir, exist_ok=True)
+
+
     period = 4;
     ghost = ReferenceGhost(startx=0, starty=0, starttheta=0, scale=5, T=period)
     controller = KanayamaControl(Kx=10, Ky=64, Ktheta=16)
@@ -64,7 +73,7 @@ def main():
     sim_time = period * 2.5
     time_steps = int(sim_time / dt)
 
-    plt.ion()  
+    # plt.ion()  
     
 
     
@@ -107,28 +116,29 @@ def main():
             g_body.set_data([ref_state[0]], [ref_state[1]])
             g_nose.set_data([ref_state[0], ref_state[0] + 0.5*np.cos(ref_state[2])], 
                             [ref_state[1], ref_state[1] + 0.5*np.sin(ref_state[2])])
-            # if step % 4 == 0:
-            #     buf = io.BytesIO()
-            #     env.fig.savefig(buf, format='png', dpi=80)
-            #     buf.seek(0)
-            #     gif_frames.append(Image.open(buf))
+            if step % 4 == 0:
+                buf = io.BytesIO()
+                env.fig.savefig(buf, format='png', dpi=80)
+                buf.seek(0)
+                gif_frames.append(Image.open(buf))
 
-            plt.pause(0.001)
+            # plt.pause(0.001)
 
-    plt.ioff() 
-    # print("Saving GIF...")
-    # if gif_frames:
-    #     gif_frames[0].save(
-    #         "kanayama_demo.gif",
-    #         save_all=True,
-    #         append_images=gif_frames[1:],
-    #         optimize=True,
-    #         duration=40,
-    #         loop=0
-    #     )
-
-    save_error_plot(hist_time, hist_ye, hist_thetae)
-    plt.show()
+    # plt.ioff() 
+    print("Saving GIF...")
+    if gif_frames:
+        gif_path = os.path.join(results_dir, "kanayama_demo.gif")
+        gif_frames[0].save(
+            gif_path,
+            save_all=True,
+            append_images=gif_frames[1:],
+            optimize=True,
+            duration=40,
+            loop=0
+        )
+    plot_path = os.path.join(results_dir, "error_plot.png")
+    save_error_plot(hist_time, hist_ye, hist_thetae, save_path=plot_path)
+    # plt.show()
 
     
 if __name__ == "__main__":
