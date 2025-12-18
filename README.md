@@ -26,7 +26,7 @@ This repository contains my implementations of seminal papers in robotics.
 ## Quick Start
 
 This project uses `uv` for dependency management.
-Note: Most of these Replications create and output files to a results/ folder in the current working directory. I reccomend `cd`'ing into the specific project folder for better organization.
+Note: Most of these Replications create and output files to a results/ folder in the current working directory. I recommend `cd`'ing into the specific project folder for better organization.
 
 ```bash
 git clone https://github.com/yourname/Paper_Replications.git
