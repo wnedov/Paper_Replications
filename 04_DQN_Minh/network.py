@@ -13,6 +13,7 @@ class DQNNetwork(nn.Module):
         self.fc2 = nn.Linear(512, output_dim)
 
     def forward(self, x):
+        x = x.float() / 255.0
         x = self.relu(self.cc1(x))
         x = self.relu(self.cc2(x))
         x = self.relu(self.cc3(x))
