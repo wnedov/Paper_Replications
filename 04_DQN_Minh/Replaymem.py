@@ -5,14 +5,14 @@ Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'
 
 class ReplayMemory:
 
-    def __init__(self, capacity=10000000):
+    def __init__(self, capacity=1000000):
         self.mem = deque(maxlen=capacity)
     
     def push(self, *args): 
         self.mem.append(Transition(*args))
     
     def sample(self, batch_size):
-        return random.sample(self.memory, batch_size)
+        return random.sample(self.mem, batch_size)
 
     def __len__(self):
-        return len(self.memory)
+        return len(self.mem)

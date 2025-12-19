@@ -11,6 +11,8 @@ __pycache__/
 .vscode/
 .idea/
 other/
+runs/
+*.pth
 
 # Ignore generated plots and GIFs
 *.png
