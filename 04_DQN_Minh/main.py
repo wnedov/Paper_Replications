@@ -12,7 +12,7 @@ import ale_py
 
 def create_env():
     env = gym.make("ALE/Breakout-v5", render_mode=None, frameskip=1)
-    env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, screen_size=84, frame_skip=4, terminal_on_life_loss=True)
+    env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, screen_size=84, frame_skip=4, terminal_on_life_loss=True, noop_max=30)
     env = TransformReward(env, lambda r: np.sign(r))
     env = FrameStackObservation(env, stack_size=4)
     env = TimeLimit(env, max_episode_steps=4500)
@@ -54,7 +54,8 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
     while not episode_over: 
 
         rand = np.random.rand()
-        epsilon = max(0.1, 1 - 9e-7* steps_done)
+        training_steps = max(0, steps_done - 50000) 
+        epsilon = max(0.1, 1 - 9e-7* training_steps)
         if rand < epsilon:  
             action = env.action_space.sample()
         else:
@@ -72,7 +73,7 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
         memory.push(state, action, next_state, reward, episode_over)
         state = next_state
 
-        if memory.__len__() < 32:
+        if memory.__len__() < 50000 or steps_done % 4 != 0:
             continue
 
         batch = memory.sample(32)
@@ -82,7 +83,7 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
             target_net.load_state_dict(policy_net.state_dict())
     
     writer.add_scalar("Score/Episode_Reward", total_reward, steps_done)
-    writer.add_scalar("Epsilon", max(0.1, 1 - 9e-7 * steps_done), steps_done)
+    writer.add_scalar("Epsilon", max(0.1, 1 - 9e-7 * training_steps), steps_done)
     
     return total_reward, steps_done
 
@@ -95,7 +96,8 @@ if __name__ == "__main__":
     memory = ReplayMemory(capacity=1000000)
     device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
 
-    writer = SummaryWriter("runs/breakout_v1")
+
+    writer = SummaryWriter("runs/breakout")
 
     state_dim = env.observation_space.shape[0] 
     action_dim = env.action_space.n
@@ -109,15 +111,21 @@ if __name__ == "__main__":
                                     alpha=0.95, 
                                     eps=0.01, 
                                     momentum=0.95)
-    loss = torch.nn.MSELoss()
+    loss = torch.nn.SmoothL1Loss()
 
     steps_done = 0
-    progress_bar = tqdm(range(5000), unit="episode", desc="Training")
+    milestones = {5000, 15000, 25000, 50000}
+    progress_bar = tqdm(range(52000), unit="episode", desc="Training")
     for i in progress_bar:
         total_reward, steps_done = train_episode(env, memory, policy_net, target_net, loss, optimizer, steps_done, device, writer)
         progress_bar.set_postfix(
             step=steps_done, 
             score=total_reward 
         )
+        episode_count = i + 1
+        if episode_count in milestones:
+            filename = f"weights_{episode_count}.pth"
+            torch.save(policy_net.state_dict(), filename)
+            print(f"  Checkpoint saved: {filename}")
 
     torch.save(policy_net.state_dict(), "breakout_weights.pth")
