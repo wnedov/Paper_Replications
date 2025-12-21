@@ -13,7 +13,7 @@ import ale_py
 def create_env():
     env = gym.make("ALE/Breakout-v5", render_mode=None, frameskip=1)
     env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, screen_size=84, frame_skip=4, terminal_on_life_loss=True, noop_max=30)
-    env = TransformReward(env, lambda r: np.sign(r))
+    env = TransformReward(env, lambda r: float(r) * 0.5) #np.sign(r) to clip rewards.
     env = FrameStackObservation(env, stack_size=4)
     env = TimeLimit(env, max_episode_steps=4500)
     return env
@@ -55,7 +55,7 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
 
         rand = np.random.rand()
         training_steps = max(0, steps_done - 50000) 
-        epsilon = max(0.1, 1 - 9e-7* training_steps)
+        epsilon = max(0.1, 1 - 8e-7* training_steps) #9e-7 for true linear
         if rand < epsilon:  
             action = env.action_space.sample()
         else:
@@ -68,10 +68,18 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
         next_state = np.array(next_state)
         total_reward += reward 
         steps_done += 1
-        episode_over = terminated or truncated
 
-        memory.push(state, action, next_state, reward, episode_over)
-        state = next_state
+   
+        memory.push(state, action, next_state, reward, terminated)
+
+        real_game_over = info.get("lives", 0) == 0
+
+        if real_game_over or truncated:
+            episode_over = True;
+        elif terminated:
+            state = next_state 
+        else:
+            state = next_state
 
         if memory.__len__() < 50000 or steps_done % 4 != 0:
             continue
@@ -79,11 +87,11 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
         batch = memory.sample(32)
         train_network(policy_net, target_net, batch, loss_fn, optimizer, device, writer, steps_done)
 
-        if steps_done % 10000 == 0:
+        if steps_done % 20000 == 0:
             target_net.load_state_dict(policy_net.state_dict())
     
     writer.add_scalar("Score/Episode_Reward", total_reward, steps_done)
-    writer.add_scalar("Epsilon", max(0.1, 1 - 9e-7 * training_steps), steps_done)
+    writer.add_scalar("Epsilon", max(0.1, 1 - 8e-7 * training_steps), steps_done)
     
     return total_reward, steps_done
 
@@ -114,18 +122,36 @@ if __name__ == "__main__":
     loss = torch.nn.SmoothL1Loss()
 
     steps_done = 0
-    milestones = {5000, 15000, 25000, 50000}
-    progress_bar = tqdm(range(52000), unit="episode", desc="Training")
-    for i in progress_bar:
+    episode_count = 0
+    MAX_STEPS = 15_050_000
+    milestones = [1_000_000, 2_000_000, 5_000_000, 10_000_000, 15_000_000]
+    milestone_index = 0
+
+    progress_bar = tqdm(total=MAX_STEPS, unit="step", desc="Training")
+    while steps_done < MAX_STEPS:
+        
+        start_steps = steps_done
+
         total_reward, steps_done = train_episode(env, memory, policy_net, target_net, loss, optimizer, steps_done, device, writer)
+        
+        steps_added = steps_done - start_steps
+        episode_count += 1
+
+        progress_bar.update(steps_added)
         progress_bar.set_postfix(
-            step=steps_done, 
+            ep=episode_count, 
+            len=steps_added,
             score=total_reward 
         )
-        episode_count = i + 1
-        if episode_count in milestones:
-            filename = f"weights_{episode_count}.pth"
-            torch.save(policy_net.state_dict(), filename)
-            print(f"  Checkpoint saved: {filename}")
 
-    torch.save(policy_net.state_dict(), "breakout_weights.pth")
+        if milestone_index < len(milestones):
+            target = milestones[milestone_index]
+            
+            if steps_done >= target:
+                filename = f"weights_{target//1_000_000}M.pth"
+                torch.save(policy_net.state_dict(), filename)
+                progress_bar.write(f"  Checkpoint saved: {filename}")
+                milestone_index += 1
+
+    progress_bar.close()
+    torch.save(policy_net.state_dict(), "weights_final.pth")
