@@ -3,6 +3,7 @@ import numpy as np
 import shapely.geometry
 from common.environment import MapEnv
 from rrt import RRT, RRT_A
+from scipy.interpolate import splprep, splev
 
 def run_planner(planner_class, env, n_iter, step_size):
     print(f"Running {planner_class.__name__}...")
@@ -13,7 +14,7 @@ def run_planner(planner_class, env, n_iter, step_size):
     else:
         return planner.rrt()
 
-def draw_results(env, node_list, planner_class):
+def draw_results(env, node_list, planner_class, smooth):
     E = [[node.parent.get_loc(), node.get_loc()] for node in node_list if node.parent]
     env.draw_tree(E)
 
@@ -25,44 +26,73 @@ def draw_results(env, node_list, planner_class):
         temp_planner = planner_class(env, 1, 1) 
         path = temp_planner.get_path_coords(best_node)
         
-        env.draw_path(path)
+        if smooth:
+            env.draw_path(path, color='gray', linestyle='--')
+            smooth_path_coords = get_smooth_path(path, s=0.5) 
+            env.draw_path(smooth_path_coords, color='red')
+        else:
+            env.draw_path(path, color='red')
     else:
         print(f"[{planner_class.__name__}] No path found!")
 
+def get_smooth_path(path, s=0.5):
+    path = np.array(path).T
+    if path.shape[1] < 4:
+        return path.T
+        
+    tck, u = splprep(path, s=s)
+    u_new = np.linspace(u.min(), u.max(), 100)
+    x_new, y_new = splev(u_new, tck)
+    
+    return np.column_stack((x_new, y_new))
+
 def main():
     # Options: "RRT", "RRT_STAR", "BOTH" - the both option also shows a cost comparison graph
-    MODE = "RRT_STAR" 
-    
+    MODE = "BOTH" 
+    SMOOTHING = False #Smooth the final path using Bezier
     ITERATIONS = 5000
     STEP_SIZE = 0.5
 
-    env = MapEnv() 
-    env.draw_elements()
 
     if MODE == "BOTH":
-        temp_env = MapEnv() 
-        plt.close(temp_env.fig) 
-        _, history_rrt = run_planner(RRT, temp_env, ITERATIONS, STEP_SIZE)
+        env_rrt = MapEnv()
+        env_rrt.draw_elements()
+        plt.title("RRT Path Finding")
+        nodes_rrt, hist_rrt = run_planner(RRT, env_rrt, ITERATIONS, STEP_SIZE)
+        draw_results(env_rrt, nodes_rrt, RRT, smooth=SMOOTHING)
 
-        nodes_star, history_star = run_planner(RRT_A, env, ITERATIONS, STEP_SIZE)
-        draw_results(env, nodes_star, RRT_A)
+        env_star = MapEnv()
+        env_star.draw_elements()
+        plt.title("RRT* Path Finding")
+        nodes_star, hist_star = run_planner(RRT_A, env_star, ITERATIONS, STEP_SIZE)
+        draw_results(env_star, nodes_star, RRT_A, smooth=SMOOTHING)
 
         plt.figure(figsize=(10, 5))
-        plt.plot(history_rrt, color='red', label='RRT', linewidth=1.5, alpha=0.7)
-        plt.plot(history_star, color='blue', label='RRT*', linewidth=1.5)
+        plt.plot(hist_rrt, color='red', label='RRT', linewidth=1.5, alpha=0.7)
+        plt.plot(hist_star, color='blue', label='RRT*', linewidth=1.5)
+        plt.xlabel("Iterations")
+        plt.ylabel("Cost")
+        plt.legend()
         plt.title("Cost Convergence: RRT vs RRT*")
 
     elif MODE == "RRT":
+        env = MapEnv() 
+        env.draw_elements()
+        plt.title("RRT Path Finding")
         nodes, history = run_planner(RRT, env, ITERATIONS, STEP_SIZE)
-        draw_results(env, nodes, RRT)
+        draw_results(env, nodes, RRT, smooth=SMOOTHING)
         
         plt.figure(figsize=(10, 5))
         plt.plot(history, color='red', label='RRT')
         plt.title("RRT Cost History")
 
     elif MODE == "RRT_STAR":
+        env = MapEnv() 
+        env.draw_elements()
+        plt.title("RRT* Path Finding")
+
         nodes, history = run_planner(RRT_A, env, ITERATIONS, STEP_SIZE)
-        draw_results(env, nodes, RRT_A)
+        draw_results(env, nodes, RRT_A, smooth=SMOOTHING)
         
         plt.figure(figsize=(10, 5))
         plt.plot(history, color='blue', label='RRT*')

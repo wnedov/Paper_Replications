@@ -1,5 +1,6 @@
 import shapely
 import numpy as np
+from scipy.spatial import cKDTree
 
 class Node: 
 
@@ -31,6 +32,7 @@ class RRT:
 
         self.cost_history = [] 
         self.goal_nodes = []
+        self.node_coords = [self.start.get_loc()]
     
     def sample(self):
         lbound = [self.env.border.bounds[0], self.env.border.bounds[1]];
@@ -40,14 +42,9 @@ class RRT:
         return s if not(p.intersects(self.env.obstacle)) else None;
 
     def NearestNeighbour(self, V, rand): 
-        min = V[0];
-        mindist = np.linalg.norm(min.get_loc() - rand);
-        for v in V: 
-            dist = np.linalg.norm(v.get_loc() - rand);
-            if dist < mindist:
-                min = v;
-                mindist = dist;
-        return min
+        tree = cKDTree(self.node_coords)
+        _, i = tree.query(rand, k=1)
+        return V[i]
 
     def Steer(self, nearest, rand):
         if np.linalg.norm(nearest.get_loc() - rand) <= self.step:
@@ -76,6 +73,7 @@ class RRT:
 
     def rrt(self): 
         V = [self.start];
+        self.node_coords = [self.start.get_loc()]
         for i in range(0, self.iterations):
             rand = self.sample();
             while rand is None: 
@@ -85,6 +83,8 @@ class RRT:
             new = self.Steer(nearest, rand); 
             if self.CollisionTest(nearest, new):
                 V.append(new);
+                self.node_coords.append(new.get_loc())
+
                 p = shapely.geometry.Point(new.get_loc())
                 if self.env.end.contains(p):
                     self.goal_nodes.append(new)
@@ -103,12 +103,15 @@ class RRT:
 class RRT_A(RRT):
 
     def NearVertices(self, V, new, r):
-        return [v for v in V if np.linalg.norm(v.get_loc() - new.get_loc()) < r];
+        tree = cKDTree(self.node_coords)
+        indices = tree.query_ball_point(new.get_loc(), r)
+        return [V[i] for i in indices]
 
 
     def rrt_a(self):
         V = [self.start];
         E = []
+        self.node_coords = [self.start.get_loc()]
         for i in range(0, self.iterations): 
             rand = self.sample();
             while rand is None:
@@ -121,6 +124,7 @@ class RRT_A(RRT):
                 r = min(y*(np.log(len(V))/len(V))**(1/2), self.step);
                 nearNodes = self.NearVertices(V, new, r)
                 V.append(new); 
+                self.node_coords.append(new.get_loc())
 
                 cmin = nearest.cost + np.linalg.norm(nearest.get_loc() - new.get_loc())
                 xmin = nearest

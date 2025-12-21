@@ -27,11 +27,11 @@ class MapEnv:
     def draw_tree(self, seg):
         self.lines.set_segments(seg);
 
-    def draw_path(self, path_coords):
+    def draw_path(self, path_coords, **kwargs):
         x = path_coords[:, 0] 
         y = path_coords[:, 1] 
         
-        self.ax.plot(x, y, color="red", linewidth=3, zorder=10)
+        self.ax.plot(x, y, linewidth=3, zorder=10, **kwargs)
 
 
     def draw_elements(self):
