@@ -7,13 +7,14 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import ale_py
+import os
 
 
 
 def create_env():
-    env = gym.make("ALE/Breakout-v5", render_mode=None, frameskip=1)
+    env = gym.make("ALE/Breakout-v5", render_mode=None, frameskip=1, repeat_action_probability=0.0)
     env = AtariPreprocessing(env, grayscale_obs=True, scale_obs=False, screen_size=84, frame_skip=4, terminal_on_life_loss=True, noop_max=30)
-    env = TransformReward(env, lambda r: float(r) * 0.5) #np.sign(r) to clip rewards.
+    env = TransformReward(env, lambda r: np.sign(r)) #np.sign(r) to clip rewards.
     env = FrameStackObservation(env, stack_size=4)
     env = TimeLimit(env, max_episode_steps=4500)
     return env
@@ -34,11 +35,14 @@ def train_network(policy_net, target_net, batch, loss_fn, optimizer, device, wri
     rewards = torch.tensor(rewards, device=device, dtype=torch.float32)
 
     pred = policy_net(states).gather(dim=1, index=actions).squeeze()
-    future_rewards = target_net(next_states).max(dim=1)[0].detach()
+    with torch.no_grad():
+        best_actions = policy_net(next_states).argmax(dim=1).unsqueeze(1)
+        future_rewards = target_net(next_states).gather(dim=1, index=best_actions).squeeze()
     y = rewards + (1 - terminations) * 0.99 * future_rewards
 
     loss = loss_fn(y, pred)
     loss.backward()
+    torch.nn.utils.clip_grad_norm_(policy_net.parameters(), 10)
     optimizer.step()
 
     if steps_done % 100 == 0: 
@@ -55,7 +59,7 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
 
         rand = np.random.rand()
         training_steps = max(0, steps_done - 50000) 
-        epsilon = max(0.1, 1 - 8e-7* training_steps) #9e-7 for true linear
+        epsilon = max(0.1, 1 - 7e-7* training_steps) #9e-7 for true linear
         if rand < epsilon:  
             action = env.action_space.sample()
         else:
@@ -87,11 +91,11 @@ def train_episode(env, memory, policy_net, target_net, loss_fn, optimizer, steps
         batch = memory.sample(32)
         train_network(policy_net, target_net, batch, loss_fn, optimizer, device, writer, steps_done)
 
-        if steps_done % 20000 == 0:
+        if steps_done % 10000 == 0:
             target_net.load_state_dict(policy_net.state_dict())
     
     writer.add_scalar("Score/Episode_Reward", total_reward, steps_done)
-    writer.add_scalar("Epsilon", max(0.1, 1 - 8e-7 * training_steps), steps_done)
+    writer.add_scalar("Epsilon", max(0.1, 1 - 7e-7 * training_steps), steps_done)
     
     return total_reward, steps_done
 
@@ -123,9 +127,19 @@ if __name__ == "__main__":
 
     steps_done = 0
     episode_count = 0
-    MAX_STEPS = 15_050_000
-    milestones = [1_000_000, 2_000_000, 5_000_000, 10_000_000, 15_000_000]
     milestone_index = 0
+    CHECKPOINT_FILE = "AAAAA" # change as neccesary
+    
+    if os.path.exists(CHECKPOINT_FILE):
+        print(f"Loading From {CHECKPOINT_FILE}...")
+        policy_net.load_state_dict(torch.load(CHECKPOINT_FILE, map_location=device))
+        target_net.load_state_dict(policy_net.state_dict())
+        steps_done = 20_000_000 # change these as neccessary
+        milestone_index = 5
+    
+    MAX_STEPS = 50_050_000
+    milestones = [1_000_000, 2_000_000, 5_000_000, 10_000_000, 20_000_000, 50_000_000]
+   
 
     progress_bar = tqdm(total=MAX_STEPS, unit="step", desc="Training")
     while steps_done < MAX_STEPS:
@@ -154,4 +168,3 @@ if __name__ == "__main__":
                 milestone_index += 1
 
     progress_bar.close()
-    torch.save(policy_net.state_dict(), "weights_final.pth")
