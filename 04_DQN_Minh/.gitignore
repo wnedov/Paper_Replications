@@ -1,3 +1,5 @@
 plot.py
 runs/ 
 *.pth
+evaluate.py
+results/ 
