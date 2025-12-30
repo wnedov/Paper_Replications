@@ -52,16 +52,20 @@ def main():
     SMOOTHING = False #Smooth the final path using Bezier
     ITERATIONS = 5000
     STEP_SIZE = 0.5
+    maze_obstacles = [ 
+    (6.0, -4.0, 7.0, 10.0),   
+    (-2.0, 2.0, 1.0, 3.0),    
+    ]
 
 
     if MODE == "BOTH":
-        env_rrt = MapEnv()
+        env_rrt = MapEnv(obstacles=maze_obstacles)
         env_rrt.draw_elements()
         plt.title("RRT Path Finding")
         nodes_rrt, hist_rrt = run_planner(RRT, env_rrt, ITERATIONS, STEP_SIZE)
         draw_results(env_rrt, nodes_rrt, RRT, smooth=SMOOTHING)
 
-        env_star = MapEnv()
+        env_star = MapEnv(obstacles=maze_obstacles)
         env_star.draw_elements()
         plt.title("RRT* Path Finding")
         nodes_star, hist_star = run_planner(RRT_A, env_star, ITERATIONS, STEP_SIZE)
@@ -76,7 +80,7 @@ def main():
         plt.title("Cost Convergence: RRT vs RRT*")
 
     elif MODE == "RRT":
-        env = MapEnv() 
+        env = MapEnv(obstacles=maze_obstacles)
         env.draw_elements()
         plt.title("RRT Path Finding")
         nodes, history = run_planner(RRT, env, ITERATIONS, STEP_SIZE)
@@ -87,7 +91,7 @@ def main():
         plt.title("RRT Cost History")
 
     elif MODE == "RRT_STAR":
-        env = MapEnv() 
+        env = MapEnv(obstacles=maze_obstacles)
         env.draw_elements()
         plt.title("RRT* Path Finding")
 

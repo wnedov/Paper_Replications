@@ -6,12 +6,16 @@ import matplotlib.collections as c
 
 class MapEnv:
 
-    def __init__(self): 
+    def __init__(self, obstacles=None, start=(0,0)):
 
         self.border = shapely.box(-10,-10,10,10);
-        self.start = (0,0); 
+        self.start = start; 
         self.end = shapely.box(7,7,9,9);
-        self.obstacle = shapely.box(2.5,4,5,6);
+
+        self.obstacle = shapely.Polygon() 
+        if obstacles:
+            for obs in obstacles:
+                self.add_obstacle(obs)
 
         self.fig, self.ax = plt.subplots();
         self.ax.set_xlim(-10,10);
@@ -32,9 +36,13 @@ class MapEnv:
         y = path_coords[:, 1] 
         
         self.ax.plot(x, y, linewidth=3, zorder=10, **kwargs)
+    
+    def add_obstacle(self, bounds):
+        new_obs = shapely.box(*bounds)
+        self.obstacle = shapely.union(self.obstacle, new_obs)
 
 
     def draw_elements(self):
-        shapely.plotting.plot_polygon(self.end, self.ax, color="purple", add_points=False);
-        shapely.plotting.plot_polygon(self.obstacle, self.ax, color="red", add_points=False);
-        self.ax.scatter([self.start[0]], [self.start[1]], color="blue", zorder=5);
+        shapely.plotting.plot_polygon(self.end, self.ax, color="purple", add_points=False)
+        shapely.plotting.plot_polygon(self.obstacle, self.ax, color="red", add_points=False)
+        self.ax.scatter([self.start[0]], [self.start[1]], color="blue", zorder=5)

@@ -2,6 +2,7 @@ import numpy as np
 import shapely
 import heapq
 import reeds_shepp_path_planning as rs
+from collections import deque
 
 
 
@@ -67,8 +68,48 @@ class hybridAstar():
         self.min_radius = self.wheelbase / np.tan(max(self.steering_inputs))
         self.maxc = 1.0 / self.min_radius
 
-
+        self.holonomic_map = self.holonomic()
         self.start_node = Node(0, self.h(self.start), state=self.start, discrete=self.grid.get_index(self.start))
+        
+
+
+    def holonomic(self):
+        w, h = self.grid.width_indices, self.grid.height_indices
+        bfs_map = np.full((w, h), np.inf)
+        gx, gy, _ = self.grid.get_index(self.goal)
+        
+
+        queue = deque([(gx, gy)])
+        bfs_map[gx, gy] = 0
+        
+        moves = [
+            (0,1,1), (0,-1,1), (1,0,1), (-1,0,1),     
+            (1,1,1.41), (1,-1,1.41), (-1,1,1.41), (-1,-1,1.41)
+        ]
+        
+        while queue:
+            cx, cy = queue.popleft()
+            current_cost = bfs_map[cx, cy]
+            
+            for dx, dy, move_cost in moves:
+                nx, ny = cx + dx, cy + dy
+                
+                if not (0 <= nx < w and 0 <= ny < h):
+                    continue
+                
+                if bfs_map[nx, ny] <= current_cost + move_cost:
+                    continue
+
+                wx = self.grid.x_min + (nx * self.grid.res_xy) + (self.grid.res_xy / 2)
+                wy = self.grid.y_min + (ny * self.grid.res_xy) + (self.grid.res_xy / 2)
+                
+                if self.env.obstacle.contains(shapely.Point(wx, wy)):
+                    continue
+                
+                bfs_map[nx, ny] = current_cost + move_cost
+                queue.append((nx, ny))
+                
+        return bfs_map
         
 
 
@@ -77,7 +118,7 @@ class hybridAstar():
         gx, gy, gyaw = self.goal
         
         px, py, pyaw, mode, course_lengths = rs.reeds_shepp_path_planning(
-            sx, sy, syaw, gx, gy, gyaw, self.maxc, step_size=2
+            sx, sy, syaw, gx, gy, gyaw, self.maxc, step_size=0.5
         )
         
         if course_lengths is None:
@@ -85,8 +126,13 @@ class hybridAstar():
         else:
             non_holonomic = sum(abs(l) for l in course_lengths)
 
-        euclid = np.linalg.norm(np.array(self.goal[:2]) - np.array(state[:2]))
-        return max(euclid, non_holonomic)
+        idx = self.grid.get_index(state)
+        ix, iy = idx[0], idx[1]
+        if 0 <= ix < self.grid.width_indices and 0 <= iy < self.grid.height_indices:
+            holonomic = self.holonomic_map[ix, iy]
+        else:
+            holonomic = float('inf')
+        return max(holonomic, non_holonomic)
 
 
     def g(self, parent_node, direction, step_distance): 
@@ -106,7 +152,7 @@ class hybridAstar():
         idx = self.grid.get_index(state)
         if not (0 <= idx[0] < self.grid.width_indices and 0 <= idx[1] < self.grid.height_indices):
             return True
-            
+        
         point = shapely.Point(state[0], state[1])
         if self.env.obstacle.contains(point): 
             return True

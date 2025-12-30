@@ -9,6 +9,7 @@ This repository contains my implementations of seminal papers in robotics.
 | Paper / Concept | What it does | Status |
 | :--- | :--- | :--- |
 | **[Karaman & Frazzoli 2011]**<br>_RRT*: Optimal Path Planning_ | Finds the shortest path through complex obstacles using random sampling. Unlike standard RRT, this version rewires itself to optimize the route over time. | ✅ **Done** |
+| **[Dolgov et al. 2008]**<br>_Hybrid A* Path Planning_ | Plans smooth, drivable paths for car-like robots by combining A* grid search with continuous vehicle kinematics. Uses Reeds-Shepp curves for analytic path completion near the goal. | ✅ **Done** |
 
 ### Control
 
@@ -21,7 +22,8 @@ This repository contains my implementations of seminal papers in robotics.
 
 | Paper / Concept | What it does | Status |
 | :--- | :--- | :--- |
-| **[Mnih et al. 2013]**<br>*Playing Atari with Deep RL (DQN)* | The "Hello World" of Deep RL. Uses a Convolutional Neural Network (CNN) and Q-learning to teach an agent to play Atari games directly from raw pixel inputs. | **In Progress** |
+| **[Mnih et al. 2015]**<br>*DQN & Double DQN (Atari)* | The "Hello World" of Deep RL. Uses a CNN and Q-learning to teach an agent to play Atari Breakout directly from raw pixels. Implements Double DQN (Hasselt 2015) for training stability. | ✅ **Done** |
+| **[Schulman et al. 2017]**<br>*Proximal Policy Optimization (PPO)* | A policy gradient method that uses clipped surrogate objectives to enable stable, efficient training. The go-to algorithm for continuous control tasks. | **In Progress** |
 
 ## Quick Start
 

@@ -6,9 +6,13 @@ from hybridAstar import hybridAstar, DiscreteGrid
 
 def main():
 
-    env = MapEnv()
+    maze_obstacles = [ 
+        (5.0, -4.0, 6.0, 10.0),   
+        (-2.0, 2.0, 1.0, 3.0),    
+    ]
+    env = MapEnv(obstacles=maze_obstacles, start=(-5, -2))
     
-    start_state = [0.0, 0.0, 0.0, 0.0]  
+    start_state = [-5, -2, 0.0, 0.0]  
     goal_state = [8.0, 8.0, np.pi/2]  
     
 
