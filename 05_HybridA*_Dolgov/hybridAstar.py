@@ -1,5 +1,7 @@
 import numpy as np
 import shapely
+import heapq
+
 
 
 class Node: 
@@ -52,18 +54,20 @@ class hybridAstar():
         self.goal = goal_state
         self.model = model
         self.grid = grid
+        self.start_node = Node(0, self.h(), state=self.start, discrete=self.grid.get_index(self.start))
         
         # Configuration constants
         self.dt = 0.2  
+        self.v = 3.0
         self.steering_inputs = [-0.5, 0, 0.5] 
         self.reverse_penalty = 2.0
         self.change_dir_penalty = 5.0
 
 
-    def h(self): 
-        holonomic = 
-        non_holonomic = 
-        return max(holonomic, non_holonomic)
+    def h(self, Node): 
+        non_holonomic = ... # Need to fix this, but how?
+        euclid = np.linalg.norm(np.array(self.goal[:2]) - np.array(self.start[:2]))
+        return max(euclid, non_holonomic)
 
 
     def g(self, parent_node, direction, step_distance): 
@@ -82,13 +86,13 @@ class hybridAstar():
     def check_collision(self, state):
         idx = self.grid.get_index(state)
         if not (0 <= idx[0] < self.grid.width_indices and 0 <= idx[1] < self.grid.height_indices):
-            return False
+            return True
             
         point = shapely.Point(state[0], state[1])
         if self.env.obstacle.contains(point): 
-            return False
+            return True
             
-        return True
+        return False
 
     def reconstruct_path(self, node):
         path = []
@@ -99,7 +103,46 @@ class hybridAstar():
 
     
     def hybridastar(self): 
-        
+        open = []
+        heapq.heappush(open, (self.start_node.f_cost, self.start_node))
+        closed = {}
+        closed[self.start_node.discrete] = self.start_node
+        current_node = None
 
+        while open:
+            current_node = heapq.heappop(open)[1]
 
+            if np.linalg.norm(np.array(current_node.state[:2]) - np.array(self.goal[:2])) < 1.0:
+                return self.reconstruct_path(current_node) # Redd-Sheepp.. Iguess? 
+            
+            for steering in self.steering_inputs:
+                for direction in [1, -1]:
+                    total_distance = 0.0
 
+                    state = np.array(current_node.state)
+                    state[3] *= self.v * direction  
+                    control = np.array([0, steering])
+
+                    new_state = self.model.discrete_dynamics(state, control, self.dt)
+                    total_distance += np.linalg.norm(new_state[:2] - state[:2]) 
+                    state = new_state
+                        
+                    if self.check_collision(new_state):
+                        continue
+
+                    else: 
+                        g_cost = self.g(current_node, direction, total_distance) 
+                        h_cost = np.linalg.norm(np.array(self.goal[:2]) - np.array(state[:2])) # use h method here, but need to fix first. 
+                        new_cost = g_cost + h_cost
+                        
+                        discrete_idx = self.grid.get_index(state)
+
+                        if discrete_idx in closed and closed[discrete_idx].g_cost <= new_cost: 
+                            continue
+
+                        closed[discrete_idx] = successor_node
+                        successor_node = Node(g_cost, new_cost, current_node, state, discrete_idx, direction)
+                        heapq.heappush(open, (new_cost, successor_node)) 
+
+        if current_node is None:
+            return None 
