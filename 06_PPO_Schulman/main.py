@@ -7,6 +7,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import ale_py
 import os
+from common.RLWrappers import EpisodicLifeEnv
 
 
 def create_env():
@@ -15,58 +16,90 @@ def create_env():
     env = TransformReward(env, lambda r: np.sign(r)) #np.sign(r) to clip rewards.
     env = FrameStackObservation(env, stack_size=4)
     env = TimeLimit(env, max_episode_steps=4500)
+    env = EpisodicLifeEnv(env)
     return env
 
 
 
-def GAE(rewards, values, dones, gamma=0.99, lam=0.95):
-    pass
+def GAE(next_done, next_value, memory, gamma=0.99, lam=0.95):
+    
+    advantages = torch.zeros_like(memory["rewards"], device=memory["rewards"].device)
+    lastgae = 0.0
+    for t in reversed(range(128)):
+        if t == 127:
+            non_terminal = 1.0 - next_done
+            next_values = next_value
+        else:
+            non_terminal = 1.0 - memory["dones"][t + 1]
+            next_values = memory["values"][t + 1]
+        
+        delta = memory["rewards"][t] + gamma * next_values * non_terminal - memory["values"][t]
+        lastgae = delta + (gamma * lam * non_terminal * lastgae)
+        advantages[t] = lastgae
+    
+    returns = advantages + memory["values"]
+    return advantages, returns
 
-def get_data(envs, policy_net, states):
-
+            
+def get_data(envs, policy_net, prev_state, memory, device):
+    state = prev_state
     for step in range(128): 
+
+
+        memory["states"][step] = torch.tensor(state, device=device, dtype=torch.float32).detach()
+
         with torch.no_grad():
             policy_net.eval()
-            actions = np.zeros(envs.num_envs, dtype=np.int32)
 
             action, critic = policy_net(torch.tensor(states, device=device, dtype=torch.float32))
             dist = torch.distributions.Categorical(logits=action)
             action = dist.sample() 
-            actions.append(action.numpy())
-        
 
-        next_state, reward, terminated, truncated, infos = envs.step(actions)
-        # Add to memory, ..., need concept of total reward? I guess we also increase steps done? But there are 8 envs.. 
+        memory["actions"][step] = action.detach()
+        memory["log_probs"][step] = dist.log_prob(action).detach()
+        memory["values"][step] = critic.squeeze().detach()
+
+
+        next_state, reward, terminated, truncated, infos = envs.step(action)
+        done = np.logical_or(terminated, truncated)
+
+        memory["rewards"][step] = torch.tensor(reward, device=device, dtype=torch.float32).detach()
+        memory["dones"][step] = torch.tensor(done, device=device, dtype=torch.float32).detach()
+        # need concept of total reward? I guess we also increase steps done? But there are 8 envs.. 
 
         if "_final_observation" in infos.keys():
             for i, is_final in enumerate(infos["_final_observation"]):
                 if is_final:
                     real_terminal_obs = infos["final_observation"][i]
-                    #Add to buffer how? 
-                    buffer.add(..., next_state=real_terminal_obs, done=True)
-        
-        #Do i still need this section? 
-        real_game_over = info.get("lives", 0) == 0
+                    #Add to memory how?
+  
+        state = next_state
 
-        if real_game_over or truncated:
-            episode_over = True;
-        elif terminated:
-            state = next_state 
-        else:
-            state = next_state
+    with torch.no_grad():
+        policy_net.eval()
+        _, next_value = policy_net(torch.tensor(next_state, device=device, dtype=torch.float32))
+        next_value = next_value.squeeze()
+        #Again, do done flag properly here...
 
-    return memory
+    return next_value, next_done, state #actually, where do i get next done from?
 
 
 if __name__ == "__main__":
 
+    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
+
     envs = gym.vector.SyncVectorEnv([create_env for _ in range(8)])
     states, info = envs.reset()
     next_obs = torch.tensor(states)
-    memory = ... # Store States, Actions, Rewards, Dones, Log Probs, Values - is there a named tuple for this?
-    device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
-
-
+    memory = {
+        "states": torch.zeros((128, 8, 4, 84, 84), device=device),
+        "actions": torch.zeros((128, 8), device=device),
+        "log_probs": torch.zeros((128, 8), device=device),
+        "rewards": torch.zeros((128, 8), device=device),
+        "dones": torch.zeros((128, 8), device=device),
+        "values": torch.zeros((128, 8), device=device)
+    }
+ 
     writer = SummaryWriter("runs/breakout")
 
     state_dim = envs.observation_space.shape[0] 
@@ -100,7 +133,7 @@ if __name__ == "__main__":
         
         start_steps = steps_done
 
-        memory = get_data(envs, policy_net, states)  # Collect data from environments  
+        memory = get_data(envs, policy_net, states, memory, device)  # Collect data from environments  
 
 
 
