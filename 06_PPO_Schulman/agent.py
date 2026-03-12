@@ -17,7 +17,11 @@ class PPOAgent(nn.Module):
         
     def get_action_and_value(self, x, action=None):
         actor_features = self.actor_backbone(x)
-        critic_features = self.critic_backbone(x)
+
+        if self.actor_backbone is self.critic_backbone:
+            critic_features = actor_features
+        else:
+            critic_features = self.critic_backbone(x)
         
         if self.is_continuous:
             action_mean, action_std = self.actor(actor_features)
@@ -35,8 +39,10 @@ class PPOAgent(nn.Module):
             return action, probs.log_prob(action), probs.entropy(), self.critic(critic_features)
     
     def forward(self, x): 
-        x = self.actor_backbone(x) 
-        action_logits = self.actor_head(x)
-        x = self.critic_backbone(x)
-        state_values = self.critic_head(x)
+        actor_features = self.actor_backbone(x) 
+        action_logits = self.actor(actor_features) 
+        
+        critic_features = actor_features if self.actor_backbone is self.critic_backbone else self.critic_backbone(x)
+        state_values = self.critic(critic_features)
+        
         return action_logits, state_values

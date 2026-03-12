@@ -10,7 +10,7 @@ from gymnasium.wrappers import (
 import ale_py
 
 from common.networks import NatureCNN, MLP, DiscreteHead, GaussianHead, CriticHead
-from common.RLWrappers import EpisodicLifeEnv
+from common.RLWrappers import EpisodicLifeEnv, FireResetEnv
 from agent import PPOAgent
 from ppo import PPO
 
@@ -19,13 +19,14 @@ def make_atari_env(env_id):
         env = gym.make(env_id, render_mode=None, frameskip=1, repeat_action_probability=0.0)
         env = AtariPreprocessing(
             env, grayscale_obs=True, scale_obs=False,
-            screen_size=84, frame_skip=4, terminal_on_life_loss=True, noop_max=30,
+            screen_size=84, frame_skip=4, terminal_on_life_loss=False, noop_max=30,
         )
         env = RecordEpisodeStatistics(env)
+        env = EpisodicLifeEnv(env)
+        if "FIRE" in env.unwrapped.get_action_meanings():
+            env = FireResetEnv(env)
         env = TransformReward(env, lambda r: np.sign(r))
         env = FrameStackObservation(env, stack_size=4)
-        env = TimeLimit(env, max_episode_steps=4500)
-        env = EpisodicLifeEnv(env)
         return env
     return thunk
 
@@ -36,7 +37,7 @@ def make_continuous_env(env_id):
         env = RecordEpisodeStatistics(env)
         env = ClipAction(env)
         env = NormalizeObservation(env)
-        env = TransformObservation(env, lambda obs: np.clip(obs, -10, 10))
+        env = TransformObservation(env, lambda obs: np.clip(obs, -10, 10), env.observation_space)
         env = NormalizeReward(env, gamma=GAMMA)
         env = TransformReward(env, lambda r: np.clip(r, -10, 10))
         return env
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     GAMMA = 0.99
     GAE_LAMBDA = 0.95
     EPSILON = 0.1
-    C1 = 1.0
+    C1 = 0.5
     C2 = 0.01
     MAX_GRAD_NORM = 0.5
     ANNEAL_LR = True
@@ -69,7 +70,7 @@ if __name__ == "__main__":
         # Atari Hyperparameters
         num_steps = 128
         learning_rate = 2.5e-4
-        num_epochs = 3
+        num_epochs = 4
         minibatch_size = 256
         
         envs = gym.vector.SyncVectorEnv([make_atari_env(args.env_id) for _ in range(NUM_ENVS)])
@@ -77,8 +78,9 @@ if __name__ == "__main__":
         action_dim = envs.single_action_space.n
         feature_dim = 512
         
-        actor_backbone = NatureCNN(obs_dim, feature_dim)
-        critic_backbone = NatureCNN(obs_dim, feature_dim)
+        backbone = NatureCNN(obs_dim, feature_dim)
+        actor_backbone = backbone
+        critic_backbone = backbone
         actor_head = DiscreteHead(feature_dim, action_dim)
         critic_head = CriticHead(feature_dim)
     else:

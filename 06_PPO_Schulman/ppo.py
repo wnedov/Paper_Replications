@@ -52,7 +52,7 @@ class PPO:
         }
         return memory
 
-    def compute_gae(self, next_value, next_done, memory):
+    def GAE(self, next_value, next_done, memory):
         advantages = torch.zeros_like(memory["rewards"])
         lastgae = 0.0
 
@@ -61,8 +61,8 @@ class PPO:
                 non_terminal = 1.0 - next_done
                 next_values = next_value
             else:
-                non_terminal = 1.0 - memory["dones"][t]
-                next_values = memory["values"][t + 1]
+                non_terminal = 1.0 - memory["dones"][t+1]
+                next_values = memory["values"][t+1]
 
             delta = memory["rewards"][t] + self.gamma * next_values * non_terminal - memory["values"][t]
             lastgae = delta + self.gamma * self.gae_lambda * non_terminal * lastgae
@@ -71,13 +71,18 @@ class PPO:
         returns = advantages + memory["values"]
         return advantages, returns
 
-    def collect_rollouts(self, states, memory, steps_done):
+    def get_data(self, states, memory, steps_done, next_done_previous):
         ep_returns = []
         state = states
-        next_done = None
+
+        if next_done_previous is not None:
+            next_done = next_done_previous
+        else:
+            next_done = torch.zeros(self.num_envs, device=self.device)
 
         for step in range(self.num_steps):
-            memory["states"][step] = torch.tensor(state, device=self.device, dtype=torch.float32)
+            memory["dones"][step] = next_done
+            memory["states"][step] = torch.tensor(state, device=self.device, dtype=torch.float32).detach()
 
             with torch.no_grad():
                 self.agent.eval()
@@ -89,13 +94,10 @@ class PPO:
             memory["values"][step] = value.squeeze().detach()
 
             next_state, reward, terminated, truncated, infos = self.envs.step(action.cpu().numpy())
-            done = np.logical_or(terminated, truncated)
+            next_done_np = np.logical_or(terminated, truncated)
+            next_done = torch.tensor(next_done_np, device=self.device, dtype=torch.float32).detach()
 
-            if step == self.num_steps - 1:
-                next_done = torch.tensor(done, device=self.device, dtype=torch.float32)
-
-            memory["rewards"][step] = torch.tensor(reward, device=self.device, dtype=torch.float32)
-            memory["dones"][step] = torch.tensor(done, device=self.device, dtype=torch.float32)
+            memory["rewards"][step] = torch.tensor(reward, device=self.device, dtype=torch.float32).detach()
 
             if "episode" in infos and "_episode" in infos:
                 for i in range(len(infos["_episode"])):
@@ -119,13 +121,11 @@ class PPO:
 
     def update(self, memory, advantages, returns):
         self.agent.train()
-
         states = memory["states"].flatten(start_dim=0, end_dim=1).to(self.device)
         actions = memory["actions"].flatten(start_dim=0, end_dim=1).to(self.device)
         old_log_probs = memory["log_probs"].flatten(start_dim=0, end_dim=1).to(self.device)
 
         advantages_flat = advantages.flatten(0, 1).to(self.device)
-        advantages_norm = (advantages_flat - advantages_flat.mean()) / (advantages_flat.std() + 1e-8)
         returns_flat = returns.flatten(0, 1).to(self.device)
 
         total_losses, actor_losses, critic_losses, entropy_losses = [], [], [], []
@@ -134,32 +134,32 @@ class PPO:
             inds = torch.randperm(self.batch_size, device=self.device)
 
             for start in range(0, self.batch_size, self.minibatch_size):
+                self.optimizer.zero_grad()
                 end = start + self.minibatch_size
                 mb_inds = inds[start:end]
 
                 mb_states = states[mb_inds]
                 mb_actions = actions[mb_inds]
                 mb_log_probs = old_log_probs[mb_inds]
-                mb_advantages = advantages_norm[mb_inds]
+                mb_advantages = advantages_flat[mb_inds]
                 mb_returns = returns_flat[mb_inds]
 
-                self.optimizer.zero_grad()
+                mb_advantages = (mb_advantages - mb_advantages.mean()) / (mb_advantages.std() + 1e-8)
                 _, new_log_prob, entropy, values = self.agent.get_action_and_value(mb_states, action=mb_actions)
                 values = values.squeeze()
 
-                ratio = torch.exp(new_log_prob - mb_log_probs)
-                clipped_loss = torch.min(
-                    ratio * mb_advantages,
-                    torch.clamp(ratio, 1 - self.epsilon, 1 + self.epsilon) * mb_advantages
-                ).mean()
+                r = torch.exp(new_log_prob - mb_log_probs) 
+                clipped_loss = torch.min(r*mb_advantages, torch.clamp(r, 1 - self.epsilon, 1 + self.epsilon) * mb_advantages).mean()
 
-                critic_loss_fn = torch.nn.MSELoss()
-                v_loss = critic_loss_fn(values, mb_returns)
+
+                v_loss =  0.5 * ((values - mb_returns) ** 2).mean()
                 entropy_loss = entropy.mean()
 
                 loss = -clipped_loss + self.c1 * v_loss - self.c2 * entropy_loss
+
                 loss.backward()
                 torch.nn.utils.clip_grad_norm_(self.agent.parameters(), max_norm=self.max_grad_norm)
+
                 self.optimizer.step()
 
                 total_losses.append(loss.item())
@@ -174,24 +174,28 @@ class PPO:
         states, _ = self.envs.reset()
         steps_done = 0
         milestone_index = 0
+        next_done_previous = None
 
         progress_bar = tqdm(total=self.total_timesteps, unit="step", desc="Training")
 
         while steps_done < self.total_timesteps:
             start_steps = steps_done
 
-            next_value, next_done, states, mean_return = self.collect_rollouts(
-                states, memory, steps_done
-            )
-            steps_done += self.num_steps * self.num_envs
-
-            advantages, returns = self.compute_gae(next_value, next_done, memory)
-            loss, pg_loss, v_loss, ent_loss = self.update(memory, advantages, returns)
-
             if self.anneal_lr:
                 frac = 1.0 - (steps_done / self.total_timesteps)
                 self.optimizer.param_groups[0]["lr"] = self.learning_rate * frac
                 self.epsilon = self.initial_epsilon * frac
+            
+            next_value, next_done, states, mean_return = self.get_data(
+                states, memory, steps_done, next_done_previous
+            )
+            next_done_previous = next_done
+            steps_done += self.num_steps * self.num_envs
+
+            advantages, returns = self.GAE(next_value, next_done, memory)
+            loss, pg_loss, v_loss, ent_loss = self.update(memory, advantages, returns)
+
+            
 
             self.writer.add_scalar("losses/total_loss", loss, steps_done)
             self.writer.add_scalar("losses/policy_loss", pg_loss, steps_done)

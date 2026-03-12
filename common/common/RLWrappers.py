@@ -1,7 +1,8 @@
 import gymnasium as gym
 import numpy as np
 
-#From CleanRL, extremely convenient. 
+# Credit to CLEANRL for the wrappers, they are supremely useful and I don't want to reinvent the wheel
+
 class EpisodicLifeEnv(gym.Wrapper[np.ndarray, int, np.ndarray, int]):
     """
     Make end-of-life == end-of-episode, but only reset on true game over.
@@ -51,3 +52,26 @@ class EpisodicLifeEnv(gym.Wrapper[np.ndarray, int, np.ndarray, int]):
                 obs, info = self.env.reset(**kwargs)
         self.lives = self.env.unwrapped.ale.lives()  # type: ignore[attr-defined]
         return obs, info
+    
+class FireResetEnv(gym.Wrapper[np.ndarray, int, np.ndarray, int]):
+    """
+    Take action on reset for environments that are fixed until firing.
+
+    :param env: Environment to wrap
+    """
+
+    def __init__(self, env: gym.Env) -> None:
+        super().__init__(env)
+        assert env.unwrapped.get_action_meanings()[1] == "FIRE"  # type: ignore[attr-defined]
+        assert len(env.unwrapped.get_action_meanings()) >= 3  # type: ignore[attr-defined]
+
+    def reset(self, **kwargs):
+        self.env.reset(**kwargs)
+        obs, _, terminated, truncated, _ = self.env.step(1)
+        if terminated or truncated:
+            self.env.reset(**kwargs)
+        obs, _, terminated, truncated, _ = self.env.step(2)
+        if terminated or truncated:
+            self.env.reset(**kwargs)
+        return obs, {}
+
