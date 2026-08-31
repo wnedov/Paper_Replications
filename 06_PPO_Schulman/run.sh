@@ -23,21 +23,21 @@ echo "Started at $(date)"
 echo "Monitor:  tensorboard --logdir runs/"
 echo ""
 
-echo "[1/2] Atari  — ${ATARI_ENV} (${ATARI_STEPS} steps)"
-uv run main.py \
-    --env-type atari \
-    --env-id "$ATARI_ENV" \
-    --run-name breakout \
-    --total-timesteps $ATARI_STEPS &
-PID1=$!
-
-# echo "[2/2] Continuous — ${CTS_ENV} (${CTS_STEPS} steps)"
+# echo "[1/2] Atari  — ${ATARI_ENV} (${ATARI_STEPS} steps)"
 # uv run main.py \
-#     --env-type continuous \
-#     --env-id "$CTS_ENV" \
-#     --run-name halfcheetah \
-#     --total-timesteps $CTS_STEPS &
-# PID2=$!
+#     --env-type atari \
+#     --env-id "$ATARI_ENV" \
+#     --run-name breakout \
+#     --total-timesteps $ATARI_STEPS &
+# PID1=$!
+
+echo "[2/2] Continuous — ${CTS_ENV} (${CTS_STEPS} steps)"
+uv run main.py \
+    --env-type continuous \
+    --env-id "$CTS_ENV" \
+    --run-name halfcheetah \
+    --total-timesteps $CTS_STEPS &
+PID2=$!
 
 echo ""
 echo "PIDs: Atari=$PID1  Continuous=$PID2"
