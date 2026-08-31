@@ -73,10 +73,12 @@ The implementation uses 0.5 m position cells, 15° heading bins, forward and rev
   </tr>
 </table>
 
-The Kanayama tracking law stabilizes the pose error of a unicycle relative to a time-varying reference. Global position error is rotated into the robot frame, giving longitudinal, lateral, and heading errors $(e_x, e_y, e_\theta)$. The controller applies
+The Kanayama controller is similar in spirit to PID: it measures tracking error and feeds that error back into the control command. A conventional PID usually regulates one scalar quantity; this controller regulates a robot pose—position and heading—while the target is moving. It is not a full PID because it has no integral or derivative terms.
+
+The position error is expressed in the robot's local frame and separated into forward, lateral, and heading components $(e_x, e_y, e_\theta)$. Three proportional gains correct those errors, while the reference velocity $v_r$ and turn rate $\omega_r$ provide feedforward motion:
 $v = v_r\cos(e_\theta) + K_xe_x$ and $\omega = \omega_r + v_r(K_ye_y + K_\theta\sin(e_\theta))$.
 
-The simulation starts from a substantial position and heading offset. The animation shows recovery onto the trajectory; the recorded lateral and heading errors converge to zero under the implemented gains.
+The simulation starts from a substantial position and heading offset. The animation shows the feedback terms bringing the robot onto the moving trajectory; the recorded lateral and heading errors converge to zero.
 
 `cd 02_PID_Kanayama && uv run main.py`
 
