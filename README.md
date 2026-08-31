@@ -26,19 +26,21 @@ My implementations  of classic robotics, planning, control, and reinforcement-le
 
 ### RRT* — Karaman & Frazzoli (2011)
 
-**RRT — 2,500 iterations**
-
-<p align="center"><img src="01_RRT_Star_Karaman/results/rrt2500.gif" alt="RRT tree growth over 2500 iterations" width="560"></p>
-
-**RRT* — 2,500 iterations**
-
-<p align="center"><img src="01_RRT_Star_Karaman/results/rrta2500.gif" alt="RRT* tree growth and rewiring over 2500 iterations" width="560"></p>
-
-**RRT* — 10,000 iterations**
-
-<p align="center"><img src="01_RRT_Star_Karaman/results/rrta10000.gif" alt="RRT* continued path refinement over 10000 iterations" width="560"></p>
-
-<p align="center"><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" width="820"></p>
+<table>
+  <tr>
+    <td width="33%" align="center"><strong>RRT — 2,500 iterations</strong></td>
+    <td width="33%" align="center"><strong>RRT* — 2,500 iterations</strong></td>
+    <td width="33%" align="center"><strong>RRT* — 10,000 iterations</strong></td>
+  </tr>
+  <tr>
+    <td><img src="01_RRT_Star_Karaman/results/rrt2500.gif" alt="RRT tree growth over 2500 iterations" width="100%"></td>
+    <td><img src="01_RRT_Star_Karaman/results/rrta2500.gif" alt="RRT* tree growth and rewiring over 2500 iterations" width="100%"></td>
+    <td><img src="01_RRT_Star_Karaman/results/rrta10000.gif" alt="RRT* continued path refinement over 10000 iterations" width="100%"></td>
+  </tr>
+  <tr>
+    <td colspan="3"><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" width="100%"></td>
+  </tr>
+</table>
 
 RRT is a sampling-based planner for continuous configuration spaces. Each iteration samples a collision-free point, finds the nearest tree vertex with a k-d tree, steers toward the sample by at most 0.5 units, and inserts the new vertex if the connecting edge is collision-free. Following parent pointers from a goal vertex produces a feasible path, but standard RRT does not optimize that path after insertion.
 
@@ -60,9 +62,16 @@ The implementation uses 0.5 m position cells, 15° heading bins, forward and rev
 
 ### Stable tracking control — Kanayama et al. (1990)
 
-<p align="center"><img src="02_PID_Kanayama/results/kanayama_demo.gif" alt="Kanayama controller following a moving reference" width="620"></p>
-
-<p align="center"><img src="02_PID_Kanayama/results/error_plot.png" alt="Kanayama lateral and heading error convergence" width="820"></p>
+<table>
+  <tr>
+    <td width="42%" align="center"><strong>Trajectory tracking</strong></td>
+    <td width="58%" align="center"><strong>Pose-error convergence</strong></td>
+  </tr>
+  <tr>
+    <td><img src="02_PID_Kanayama/results/kanayama_demo.gif" alt="Kanayama controller following a moving reference" width="100%"></td>
+    <td><img src="02_PID_Kanayama/results/error_plot.png" alt="Kanayama lateral and heading error convergence" width="100%"></td>
+  </tr>
+</table>
 
 The Kanayama tracking law stabilizes the pose error of a unicycle relative to a time-varying reference. Global position error is rotated into the robot frame, giving longitudinal, lateral, and heading errors $(e_x, e_y, e_\theta)$. The controller applies
 $v = v_r\cos(e_\theta) + K_xe_x$ and $\omega = \omega_r + v_r(K_ye_y + K_\theta\sin(e_\theta))$.
@@ -73,15 +82,16 @@ The simulation starts from a substantial position and heading offset. The animat
 
 ### Model predictive control — Kong et al. (2015)
 
-**Low-speed dynamic simulation**
-
-<p align="center"><img src="03_MPC_Kong/results/success.gif" alt="Kinematic MPC successfully tracking a dynamic vehicle at low speed" width="680"></p>
-
-**High-speed dynamic simulation**
-
-<p align="center"><img src="03_MPC_Kong/results/drift.gif" alt="Kinematic MPC drifting when controlling a dynamic vehicle at high speed" width="680"></p>
-
-<p align="center"><img src="03_MPC_Kong/results/fig_error.png" alt="Kinematic and low-speed dynamic MPC tracking error" width="820"></p>
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Low-speed dynamic simulation</strong></td>
+    <td width="50%" align="center"><strong>High-speed dynamic simulation</strong></td>
+  </tr>
+  <tr>
+    <td><img src="03_MPC_Kong/results/success.gif" alt="Kinematic MPC successfully tracking a dynamic vehicle at low speed" width="100%"></td>
+    <td><img src="03_MPC_Kong/results/drift.gif" alt="Kinematic MPC drifting when controlling a dynamic vehicle at high speed" width="100%"></td>
+  </tr>
+</table>
 
 Model predictive control repeatedly solves a finite-horizon optimization problem, applies the first control input, then replans from the measured state. This implementation uses a 10-step, 0.1-second horizon. It numerically linearizes a four-state kinematic bicycle model along the reference and minimizes state error, input error, and input-rate change subject to acceleration limits of −1.5/+1.0 m/s² and steering limits of ±37°.
 
@@ -93,11 +103,18 @@ Both animations use the same MPC and a six-state dynamic bicycle plant with Pace
 
 ### DQN / Double DQN — Mnih et al. (2015), van Hasselt et al. (2015)
 
-<p align="center"><img src="04_DQN_Minh/results/progress_50M.gif" alt="Double DQN agent playing Atari Breakout" height="420"></p>
-
-<p align="center"><img src="04_DQN_Minh/results/breakout.png" alt="Double DQN Breakout learning curve" width="820"></p>
-
-<p align="center"><img src="04_DQN_Minh/results/failed_runs.png" alt="DQN failed and unstable training curves" width="820"></p>
+<table>
+  <tr>
+    <td width="25%" align="center"><strong>Trained policy</strong></td>
+    <td width="37.5%" align="center"><strong>Successful run</strong></td>
+    <td width="37.5%" align="center"><strong>Failed and unstable runs</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="04_DQN_Minh/results/progress_50M.gif" alt="Double DQN agent playing Atari Breakout" height="280"></td>
+    <td><img src="04_DQN_Minh/results/breakout.png" alt="Double DQN Breakout learning curve" width="100%"></td>
+    <td><img src="04_DQN_Minh/results/failed_runs.png" alt="DQN failed and unstable training curves" width="100%"></td>
+  </tr>
+</table>
 
 DQN approximates the action-value function $Q(s,a)$ from image observations and acts $\epsilon$-greedily with respect to those estimates. The Atari pipeline downsamples to 84×84 grayscale, repeats each selected action for four frames, stacks four observations, and clips rewards to their sign. Training begins after 50,000 transitions, samples batches from a one-million-transition replay buffer, updates every four environment steps, and synchronizes a separate target network every 10,000 steps.
 
@@ -107,15 +124,16 @@ The target uses Double DQN: the online network selects the maximizing next actio
 
 ### PPO — Schulman et al. (2017)
 
-<p align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Atari Breakout" height="420"></p>
-
-**Breakout — 10M steps**
-
-<p align="center"><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="820"></p>
-
-**HalfCheetah — 1M steps**
-
-<p align="center"><img src="06_PPO_Schulman/results/halfcheetah.png" alt="PPO HalfCheetah learning curve" width="820"></p>
+<table>
+  <tr>
+    <td width="28%" align="center"><strong>Trained Breakout policy</strong></td>
+    <td width="72%" align="center"><strong>Breakout — 10M training steps</strong></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Atari Breakout" height="300"></td>
+    <td><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="100%"></td>
+  </tr>
+</table>
 
 PPO is an on-policy actor–critic method. It estimates advantages with generalized advantage estimation and optimizes the clipped surrogate objective $\min(r_tA_t, \operatorname{clip}(r_t, 1-\epsilon, 1+\epsilon)A_t)$, limiting how far the updated policy can move from the policy that collected each rollout.
 
@@ -151,10 +169,6 @@ Run commands from the individual project directories so generated checkpoints, p
 common/                  shared environments, models, networks, and trajectories
 other/                   additional paper references
 ```
-
-## Attribution / Provenance
-
-The planning, control, and learning experiments are repository implementations of the cited methods, but not every component is written from scratch. In Hybrid A*, [`reeds_shepp_path_planning.py`](05_HybridA*_Dolgov/reeds_shepp_path_planning.py) is adapted from the [PythonRobotics Reeds–Shepp planner](https://github.com/AtsushiSakai/PythonRobotics/tree/master/PathPlanning/ReedsSheppPath); the upstream author attribution remains in the source file.
 
 ## References
 
