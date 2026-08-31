@@ -11,9 +11,9 @@ My implementations of classic robotics, planning, control, and reinforcement-lea
     <td width="33%" align="center"><strong>PPO on Breakout</strong></td>
   </tr>
   <tr>
-    <td align="center"><img src="01_RRT_Star_Karaman/results/rrta2500.gif" alt="RRT* tree expansion and rewiring" height="240"></td>
-    <td align="center"><img src="02_PID_Kanayama/results/kanayama_demo.gif" alt="Kanayama controller tracking a reference" height="240"></td>
-    <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Breakout" height="240"></td>
+    <td align="center"><img src="01_RRT_Star_Karaman/results/rrta2500_compact.gif" alt="RRT* tree expansion and rewiring" height="240"></td>
+    <td align="center"><img src="02_PID_Kanayama/results/kanayama_demo_compact.gif" alt="Kanayama controller tracking a reference" height="240"></td>
+    <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay_compact.gif" alt="PPO agent playing Breakout" height="240"></td>
   </tr>
   <tr>
     <td>Uses tree-like exploration to refine a path towards a goal.</td>
@@ -33,12 +33,12 @@ My implementations of classic robotics, planning, control, and reinforcement-lea
     <td width="33%" align="center"><strong>RRT* — 10,000 iterations</strong></td>
   </tr>
   <tr>
-    <td><img src="01_RRT_Star_Karaman/results/rrt2500.gif" alt="RRT tree growth over 2500 iterations" width="100%"></td>
-    <td><img src="01_RRT_Star_Karaman/results/rrta2500.gif" alt="RRT* tree growth and rewiring over 2500 iterations" width="100%"></td>
-    <td><img src="01_RRT_Star_Karaman/results/rrta10000.gif" alt="RRT* continued path refinement over 10000 iterations" width="100%"></td>
+    <td><img src="01_RRT_Star_Karaman/results/rrt2500_compact.gif" alt="RRT tree growth over 2500 iterations" width="100%"></td>
+    <td><img src="01_RRT_Star_Karaman/results/rrta2500_compact.gif" alt="RRT* tree growth and rewiring over 2500 iterations" width="100%"></td>
+    <td><img src="01_RRT_Star_Karaman/results/rrta10000_compact.gif" alt="RRT* continued path refinement over 10000 iterations" width="100%"></td>
   </tr>
   <tr>
-    <td colspan="3"><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" width="100%"></td>
+    <td colspan="3" align="center"><strong>Supporting result: cost convergence over 30 trials</strong><br><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" height="330"></td>
   </tr>
 </table>
 
@@ -62,11 +62,11 @@ Hybrid A* searches a discretized $(x, y, \theta)$ space while constraining trans
 
 <table>
   <tr>
-    <td width="42%" align="center"><strong>Trajectory tracking</strong></td>
-    <td width="58%" align="center"><strong>Pose-error convergence</strong></td>
+    <td width="58%" align="center"><strong>Trajectory tracking</strong></td>
+    <td width="42%" align="center"><strong>Supporting result: pose-error convergence</strong></td>
   </tr>
   <tr>
-    <td><img src="02_PID_Kanayama/results/kanayama_demo.gif" alt="Kanayama controller following a moving reference" width="100%"></td>
+    <td align="center"><img src="02_PID_Kanayama/results/kanayama_demo_compact.gif" alt="Kanayama controller following a moving reference" height="320"></td>
     <td><img src="02_PID_Kanayama/results/error_plot.png" alt="Kanayama lateral and heading error convergence" width="100%"></td>
   </tr>
 </table>
@@ -87,12 +87,12 @@ A reference trajectory also supplies the forward speed and turn rate needed to f
     <td width="50%" align="center"><strong>High-speed dynamic simulation</strong></td>
   </tr>
   <tr>
-    <td><img src="03_MPC_Kong/results/success.gif" alt="Kinematic MPC successfully tracking a dynamic vehicle at low speed" width="100%"></td>
-    <td><img src="03_MPC_Kong/results/drift.gif" alt="Kinematic MPC drifting when controlling a dynamic vehicle at high speed" width="100%"></td>
+    <td><img src="03_MPC_Kong/results/success_compact.gif" alt="Kinematic MPC successfully tracking a dynamic vehicle at low speed" width="100%"></td>
+    <td align="center"><img src="03_MPC_Kong/results/drift_compact.gif" alt="Kinematic MPC drifting when controlling a dynamic vehicle at high speed" height="360"></td>
   </tr>
 </table>
 
-Model predictive control chooses inputs by predicting how the car will move over a short horizon. Starting from the current state, it finds a sequence of acceleration and steering commands that follows the reference trajectory while respecting actuator limits. It applies the first command, measures the new state, and solves the problem again.
+Model predictive control chooses inputs by predicting how the car will move over a short horizon. Starting from the current state, it finds a sequence of acceleration and steering commands that follows the reference trajectory while respecting acceleration and steering limits. It applies the first command, measures the new state, and solves the problem again.
 
 The controller predicts with a simplified four-state kinematic bicycle model: position, heading, and forward speed. It plans 10 steps at 0.1-second intervals and penalizes tracking error, control effort, and abrupt changes in control. Acceleration is limited to −1.5/+1.0 m/s² and steering to ±37°.
 
@@ -108,20 +108,22 @@ At approximately 3.1–6.4 m/s, the omitted dynamics remain small and the contro
 
 <table>
   <tr>
-    <td width="25%" align="center"><strong>Trained policy</strong></td>
-    <td width="37.5%" align="center"><strong>Successful run</strong></td>
-    <td width="37.5%" align="center"><strong>Failed and unstable runs</strong></td>
+    <td width="25%" align="center"><strong>Supporting result: successful run</strong></td>
+    <td width="50%" align="center"><strong>Trained policy</strong></td>
+    <td width="25%" align="center"><strong>Supporting result: failed runs</strong></td>
   </tr>
   <tr>
-    <td align="center"><img src="04_DQN_Minh/results/progress_50M.gif" alt="Double DQN agent playing Atari Breakout" height="280"></td>
     <td><img src="04_DQN_Minh/results/breakout.png" alt="Double DQN Breakout learning curve" width="100%"></td>
+    <td align="center"><img src="04_DQN_Minh/results/progress_50M_compact.gif" alt="Double DQN agent playing Atari Breakout" height="360"></td>
     <td><img src="04_DQN_Minh/results/failed_runs.png" alt="DQN failed and unstable training curves" width="100%"></td>
   </tr>
 </table>
 
-DQN approximates the action-value function $Q(s,a)$ from image observations and acts $\epsilon$-greedily with respect to those estimates. The Atari pipeline downsamples to 84×84 grayscale, repeats each selected action for four frames, stacks four observations, and clips rewards to their sign. Training begins after 50,000 transitions, samples batches from a one-million-transition replay buffer, updates every four environment steps, and synchronizes a separate target network every 10,000 steps.
+DQN learns an **action-value function** $Q(s,a)$. Given the current screen state $s$ and a possible action $a$, $Q(s,a)$ estimates the discounted reward the agent can expect from taking that action and continuing to play. The network reads one state and outputs a value for every available action. During evaluation, the agent selects the action with the highest value; during training, $\epsilon$-greedy exploration occasionally replaces that choice with a random action.
 
-The target uses Double DQN: the online network selects the maximizing next action, while the target network evaluates that action. This decoupling reduces maximization bias. The retained curves show both a run that learns useful Breakout behaviour and runs that diverge or remain unstable, documenting sensitivity across long off-policy training.
+Each observed transition—state, action, reward, and next state—is stored in a one-million-transition replay buffer. Training samples batches from that buffer and adjusts the predicted value toward the observed reward plus the estimated value of the next state. The Atari pipeline supplies motion information by stacking four 84×84 grayscale frames; actions repeat for four frames and rewards are clipped to their sign.
+
+Double DQN separates action selection from action evaluation: the online network chooses the best next action, while the target network estimates its value. This reduces the upward bias produced when one network performs both operations. The supporting plots retain both a successful run and failed or unstable runs rather than presenting gameplay alone.
 
 `cd 04_DQN_Minh && uv run main.py`
 
@@ -129,11 +131,11 @@ The target uses Double DQN: the online network selects the maximizing next actio
 
 <table>
   <tr>
-    <td width="28%" align="center"><strong>Trained Breakout policy</strong></td>
-    <td width="72%" align="center"><strong>Breakout — 10M training steps</strong></td>
+    <td width="52%" align="center"><strong>Trained Breakout policy</strong></td>
+    <td width="48%" align="center"><strong>Supporting result: 10M training steps</strong></td>
   </tr>
   <tr>
-    <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Atari Breakout" height="300"></td>
+    <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay_compact.gif" alt="PPO agent playing Atari Breakout" height="340"></td>
     <td><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="100%"></td>
   </tr>
 </table>
