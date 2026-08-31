@@ -15,6 +15,8 @@ SOURCES = [
     "02_PID_Kanayama/results/kanayama_demo.gif",
     "03_MPC_Kong/results/success.gif",
     "03_MPC_Kong/results/drift.gif",
+    "04_DQN_Minh/results/progress_1M.gif",
+    "04_DQN_Minh/results/progress_5M.gif",
     "04_DQN_Minh/results/progress_50M.gif",
     "06_PPO_Schulman/results/breakout_gameplay.gif",
 ]

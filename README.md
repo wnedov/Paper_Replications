@@ -37,10 +37,9 @@ My implementations of classic robotics, planning, control, and reinforcement-lea
     <td><img src="01_RRT_Star_Karaman/results/rrta2500_compact.gif" alt="RRT* tree growth and rewiring over 2500 iterations" width="100%"></td>
     <td><img src="01_RRT_Star_Karaman/results/rrta10000_compact.gif" alt="RRT* continued path refinement over 10000 iterations" width="100%"></td>
   </tr>
-  <tr>
-    <td colspan="3" align="center"><strong>Supporting result: cost convergence over 30 trials</strong><br><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" height="330"></td>
-  </tr>
 </table>
+
+<p align="center"><strong>Cost convergence over 30 trials</strong><br><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" height="260"></p>
 
 RRT is a sampling-based planner for continuous configuration spaces. Each iteration samples a collision-free point, finds the nearest tree vertex with a k-d tree, steers toward the sample by at most 0.5 units, and inserts the new vertex if the connecting edge is collision-free. Following parent pointers from a goal vertex produces a feasible path, but standard RRT does not optimize that path after insertion.
 
@@ -60,16 +59,7 @@ Hybrid A* searches a discretized $(x, y, \theta)$ space while constraining trans
 
 ### Stable tracking control — Kanayama et al. (1990)
 
-<table>
-  <tr>
-    <td width="58%" align="center"><strong>Trajectory tracking</strong></td>
-    <td width="42%" align="center"><strong>Supporting result: pose-error convergence</strong></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="02_PID_Kanayama/results/kanayama_demo_compact.gif" alt="Kanayama controller following a moving reference" height="320"></td>
-    <td><img src="02_PID_Kanayama/results/error_plot.png" alt="Kanayama lateral and heading error convergence" width="100%"></td>
-  </tr>
-</table>
+<p align="center"><img src="02_PID_Kanayama/results/kanayama_demo_compact.gif" alt="Kanayama controller following a moving reference" height="360"></p>
 
 The Kanayama controller is similar to PID. It measures tracking error and feeds that error back into the control command. While a PID usually regulates one scalar quantity, this controller regulates a robot pose (position and heading) while the target is moving.
 
@@ -108,13 +98,24 @@ At approximately 3.1–6.4 m/s, the omitted dynamics remain small and the contro
 
 <table>
   <tr>
-    <td width="25%" align="center"><strong>Supporting result: successful run</strong></td>
-    <td width="50%" align="center"><strong>Trained policy</strong></td>
-    <td width="25%" align="center"><strong>Supporting result: failed runs</strong></td>
+    <td width="33%" align="center"><strong>1M training steps</strong></td>
+    <td width="33%" align="center"><strong>5M training steps</strong></td>
+    <td width="33%" align="center"><strong>50M training steps</strong></td>
+  </tr>
+  <tr>
+    <td><img src="04_DQN_Minh/results/progress_1M_compact.gif" alt="Double DQN Breakout policy after 1 million training steps" width="100%"></td>
+    <td><img src="04_DQN_Minh/results/progress_5M_compact.gif" alt="Double DQN Breakout policy after 5 million training steps" width="100%"></td>
+    <td><img src="04_DQN_Minh/results/progress_50M_compact.gif" alt="Double DQN Breakout policy after 50 million training steps" width="100%"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td width="50%" align="center"><strong>Successful training run</strong></td>
+    <td width="50%" align="center"><strong>Failed and unstable runs</strong></td>
   </tr>
   <tr>
     <td><img src="04_DQN_Minh/results/breakout.png" alt="Double DQN Breakout learning curve" width="100%"></td>
-    <td align="center"><img src="04_DQN_Minh/results/progress_50M_compact.gif" alt="Double DQN agent playing Atari Breakout" height="360"></td>
     <td><img src="04_DQN_Minh/results/failed_runs.png" alt="DQN failed and unstable training curves" width="100%"></td>
   </tr>
 </table>
@@ -129,20 +130,15 @@ Double DQN separates action selection from action evaluation: the online network
 
 ### PPO — Schulman et al. (2017)
 
-<table>
-  <tr>
-    <td width="52%" align="center"><strong>Trained Breakout policy</strong></td>
-    <td width="48%" align="center"><strong>Supporting result: 10M training steps</strong></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay_compact.gif" alt="PPO agent playing Atari Breakout" height="340"></td>
-    <td><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="100%"></td>
-  </tr>
-</table>
+<p align="center"><strong>Trained Breakout policy</strong><br><img src="06_PPO_Schulman/results/breakout_gameplay_compact.gif" alt="PPO agent playing Atari Breakout" height="380"></p>
 
-PPO is an on-policy actor–critic method. It estimates advantages with generalized advantage estimation and optimizes the clipped surrogate objective $\min(r_tA_t, \operatorname{clip}(r_t, 1-\epsilon, 1+\epsilon)A_t)$, limiting how far the updated policy can move from the policy that collected each rollout.
+<p align="center"><strong>Learning curve over 10M training steps</strong><br><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="760"></p>
 
-The Atari configuration collects 128-step rollouts from eight vectorized environments, shares a Nature-style CNN between the categorical actor and critic, and performs four optimization epochs per batch. The continuous-control configuration uses separate MLP backbones and a Gaussian action head. Saved reproduction runs reach approximately 373 average return on Breakout and 2700 on HalfCheetah; these are comparable to a strong reference implementation rather than claims of outperforming the paper.
+PPO learns a **policy** $\pi(a\mid s)$: given the current state $s$, it outputs a probability for each possible action $a$. In Breakout, a CNN reads stacked image frames and the actor samples an action from those probabilities. A critic processes the same state and estimates how much future reward remains available from it.
+
+Training first collects short **rollouts** containing states, actions, rewards, and critic estimates. Generalized advantage estimation compares the observed rewards with the critic's predictions to estimate whether each action performed better or worse than expected. The update raises the probability of actions with positive advantage and lowers it for actions with negative advantage.
+
+PPO limits the size of that update by comparing each action's probability under the new and old policies and clipping large changes. This implementation collects 128-step rollouts from eight Atari environments and reuses each batch for four optimization epochs. Continuous control uses MLPs and a Gaussian action distribution instead of the Atari CNN and discrete action probabilities. Saved reproduction runs reach approximately 373 average return on Breakout and 2700 on HalfCheetah; these results are comparable to a strong reference implementation, not claims of outperforming the paper.
 
 `cd 06_PPO_Schulman && uv run main.py`
 
