@@ -1,2 +1,5 @@
 runs 
 *.pth
+plot.py 
+evaluate.py
+results

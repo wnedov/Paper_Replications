@@ -2,7 +2,7 @@
 
 My implementations of classic robotics, planning, control, and reinforcement-learning papers.
 
-## Visual Highlights
+## Highlights
 
 <table>
   <tr>
@@ -88,7 +88,7 @@ The controller predicts with a simplified four-state kinematic bicycle model: po
 
 To test that simplified controller model, both animations apply its commands to the same, more detailed six-state simulated car. This dynamic model adds lateral velocity and yaw rate, and calculates lateral tire forces with a Pacejka model. Only the reference speed changes between the two experiments.
 
-At approximately 3.1–6.4 m/s, the omitted dynamics remain small and the controller tracks with about 0.20 m mean position error. At approximately 12.3–25.8 m/s, lateral slip and yaw dynamics become significant, the tires saturate, and the car understeers. The controller cannot predict this loss of lateral force, so its planned motion no longer matches the simulated car and the tracking error grows.
+At approximately 3.1–6.4 m/s, the controller tracks with about 0.20 m mean position error. At approximately 12.3–25.8 m/s, the tires saturate and the car understeers. The controller cannot predict this loss of lateral force, so its planned motion no longer matches the simulated car and the tracking error grows.
 
 `cd 03_MPC_Kong && uv run main.py`
 
@@ -120,11 +120,9 @@ At approximately 3.1–6.4 m/s, the omitted dynamics remain small and the contro
   </tr>
 </table>
 
-DQN learns an **action-value function** $Q(s,a)$. Given the current screen state $s$ and a possible action $a$, $Q(s,a)$ estimates the discounted reward the agent can expect from taking that action and continuing to play. The network reads one state and outputs a value for every available action. During evaluation, the agent selects the action with the highest value; during training, $\epsilon$-greedy exploration occasionally replaces that choice with a random action.
+DQN learns an action-value function $Q(s,a)$. Given the current screen state $s$ and a possible action $a$, $Q(s,a)$ estimates the  reward the agent can expect from taking that action and continuing to play. The network reads one state and outputs a value for every available action. During evaluation, the agent selects the action with the highest value; during training, $\epsilon$-greedy exploration occasionally replaces that choice with a random action. Each observation, which includes state, action, reward, and next state is stored in a replay buffer.
 
-Each observed transition—state, action, reward, and next state—is stored in a one-million-transition replay buffer. Training samples batches from that buffer and adjusts the predicted value toward the observed reward plus the estimated value of the next state. The Atari pipeline supplies motion information by stacking four 84×84 grayscale frames; actions repeat for four frames and rewards are clipped to their sign.
-
-Double DQN separates action selection from action evaluation: the online network chooses the best next action, while the target network estimates its value. This reduces the upward bias produced when one network performs both operations. The supporting plots retain both a successful run and failed or unstable runs rather than presenting gameplay alone.
+Training samples batches from that buffer and adjusts the predicted value toward the observed reward plus the estimated value of the next state.Double DQN separates action selection from action evaluation. It chooses one network to choose the best next action, while another network estimates its value. This reduces the risk of collapse when one network performs both.
 
 `cd 04_DQN_Minh && uv run main.py`
 
@@ -134,11 +132,9 @@ Double DQN separates action selection from action evaluation: the online network
 
 <p align="center"><strong>Learning curve over 10M training steps</strong><br><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="760"></p>
 
-PPO learns a **policy** $\pi(a\mid s)$: given the current state $s$, it outputs a probability for each possible action $a$. In Breakout, a CNN reads stacked image frames and the actor samples an action from those probabilities. A critic processes the same state and estimates how much future reward remains available from it.
+PPO learns a policy $\pi(a\mid s)$. Given the current state $s$, it outputs a probability for each possible action $a$. In Breakout, a CNN reads stacked image frames and the actor samples an action from those probabilities. A critic processes the same state and estimates how much future reward remains available from it.
 
-Training first collects short **rollouts** containing states, actions, rewards, and critic estimates. Generalized advantage estimation compares the observed rewards with the critic's predictions to estimate whether each action performed better or worse than expected. The update raises the probability of actions with positive advantage and lowers it for actions with negative advantage.
-
-PPO limits the size of that update by comparing each action's probability under the new and old policies and clipping large changes. This implementation collects 128-step rollouts from eight Atari environments and reuses each batch for four optimization epochs. Continuous control uses MLPs and a Gaussian action distribution instead of the Atari CNN and discrete action probabilities. Saved reproduction runs reach approximately 373 average return on Breakout and 2700 on HalfCheetah; these results are comparable to a strong reference implementation, not claims of outperforming the paper.
+Training first collects short rollouts containing states, actions, rewards, and critic estimates. Generalized advantage estimation compares the observed rewards with the critic's predictions to estimate whether each action performed better or worse than expected. The update raises the probability of actions with positive advantage and lowers it for actions with negative advantage.
 
 `cd 06_PPO_Schulman && uv run main.py`
 

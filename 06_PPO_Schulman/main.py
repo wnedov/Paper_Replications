@@ -89,6 +89,9 @@ if __name__ == "__main__":
         learning_rate = 3e-4
         num_epochs = 10
         minibatch_size = 64
+        EPSILON = 0.2
+        C2 = 0.0
+        NUM_ENVS = 1
         
         envs = gym.vector.SyncVectorEnv([make_continuous_env(args.env_id) for _ in range(NUM_ENVS)])
         obs_dim = envs.single_observation_space.shape[0]
