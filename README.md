@@ -1,6 +1,6 @@
 # Robotics Paper Replications
 
-Implementations and experiment reproductions of classic robotics, planning, control, and reinforcement-learning papers.
+My implementations  of classic robotics, planning, control, and reinforcement-learning papers.
 
 ## Visual Highlights
 
@@ -16,9 +16,9 @@ Implementations and experiment reproductions of classic robotics, planning, cont
     <td align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Breakout" height="240"></td>
   </tr>
   <tr>
-    <td>Explore, connect, then rewire toward shorter paths.</td>
+    <td>Uses tree-like exploration to refine a path towards a goal.</td>
     <td>Recover from pose error and lock onto a moving path.</td>
-    <td>Learn control from pixels with clipped policy updates.</td>
+    <td>Learning to solve breakout using RL.</td>
   </tr>
 </table>
 
@@ -26,56 +26,66 @@ Implementations and experiment reproductions of classic robotics, planning, cont
 
 ### RRT* — Karaman & Frazzoli (2011)
 
-<table>
-  <tr>
-    <td width="46%" align="center"><img src="01_RRT_Star_Karaman/results/rrta2500.gif" alt="RRT* rewiring a planning tree around obstacles" width="420"></td>
-    <td><strong>RRT explores fast. RRT* keeps improving the route.</strong><br><br>RRT grows a tree by taking collision-free steps toward random samples. It can find a route quickly, but that route may wander.<br><br>RRT* gives every node a path cost. A new node chooses the cheapest nearby parent, then rewires neighbours when it offers them a shortcut. The tree straightens as sampling continues.<br><br><code>cd 01_RRT_Star_Karaman && uv run main.py</code></td>
-  </tr>
-</table>
+**RRT — 2,500 iterations**
 
-Across 30 saved trials, RRT largely plateaus after finding a route; RRT* continues reducing cost over 10,000 iterations.
+<p align="center"><img src="01_RRT_Star_Karaman/results/rrt2500.gif" alt="RRT tree growth over 2500 iterations" width="560"></p>
+
+**RRT* — 2,500 iterations**
+
+<p align="center"><img src="01_RRT_Star_Karaman/results/rrta2500.gif" alt="RRT* tree growth and rewiring over 2500 iterations" width="560"></p>
+
+**RRT* — 10,000 iterations**
+
+<p align="center"><img src="01_RRT_Star_Karaman/results/rrta10000.gif" alt="RRT* continued path refinement over 10000 iterations" width="560"></p>
 
 <p align="center"><img src="01_RRT_Star_Karaman/results/cost_convergence_paper_replica.png" alt="RRT versus RRT* cost over 30 trials" width="820"></p>
 
+RRT is a sampling-based planner for continuous configuration spaces. Each iteration samples a collision-free point, finds the nearest tree vertex with a k-d tree, steers toward the sample by at most 0.5 units, and inserts the new vertex if the connecting edge is collision-free. Following parent pointers from a goal vertex produces a feasible path, but standard RRT does not optimize that path after insertion.
+
+RRT* adds a cost-to-come to every vertex. For a new vertex, the implementation searches a neighbourhood with radius $r = \min(20(\log n/n)^{1/2}, 0.5)$, selects the collision-free parent that minimizes cumulative path cost, then rewires existing neighbours when routing through the new vertex lowers their cost. The topology therefore changes after insertion, which is visible in the increasingly radial tree and the continued reduction in best-path cost. The saved convergence plot averages the best goal-path cost across 30 trials.
+
+`cd 01_RRT_Star_Karaman && uv run main.py`
+
 ### Hybrid A* — Dolgov et al. (2008)
 
-<table>
-  <tr>
-    <td width="46%" align="center"><img src="05_HybridA*_Dolgov/results/example_path.png" alt="Hybrid A* path through an obstacle field" width="420"></td>
-    <td><strong>A* finds a route. Hybrid A* finds one a car can drive.</strong><br><br>A grid path can demand impossible sideways motion. This search tracks <em>x</em>, <em>y</em>, and heading, then expands each node with forward and reverse bicycle-model steps.<br><br>An obstacle-aware grid heuristic guides the search; Reeds–Shepp distance accounts for steering limits and provides an analytic finish near the goal.<br><br><code>cd '05_HybridA*_Dolgov' && uv run main.py</code></td>
-  </tr>
-</table>
+<p align="center"><img src="05_HybridA*_Dolgov/results/example_path.png" alt="Hybrid A* path through an obstacle field" width="640"></p>
+
+Hybrid A* searches a discretized $(x, y, \theta)$ state space while propagating continuous vehicle dynamics between cells. This retains A*'s graph-search structure without allowing transitions that a nonholonomic vehicle cannot execute.
+
+The implementation uses 0.5 m position cells, 15° heading bins, forward and reverse bicycle-model primitives, collision checking, and penalties for reversing or changing direction. Its heuristic is the maximum of an obstacle-aware 2D cost map and Reeds–Shepp path length. A collision-free Reeds–Shepp connection terminates the search near the goal and produces the final pose-constrained segment shown above.
+
+`cd '05_HybridA*_Dolgov' && uv run main.py`
 
 ## Control
 
 ### Stable tracking control — Kanayama et al. (1990)
 
-<table>
-  <tr>
-    <td width="46%" align="center"><img src="02_PID_Kanayama/results/kanayama_demo.gif" alt="Kanayama controller following a moving reference" width="420"></td>
-    <td><strong>Pose error becomes motion that pulls the robot back onto its path.</strong><br><br>The controller rotates position error into the robot's body frame, then turns longitudinal, lateral, and heading error into linear and angular velocity commands.<br><br>The robot starts displaced and misaligned. The animation shows it catching the reference; the plot shows lateral and heading error settling to zero.<br><br><code>cd 02_PID_Kanayama && uv run main.py</code></td>
-  </tr>
-</table>
+<p align="center"><img src="02_PID_Kanayama/results/kanayama_demo.gif" alt="Kanayama controller following a moving reference" width="620"></p>
 
-<p align="center"><img src="02_PID_Kanayama/results/error_plot.png" alt="Kanayama lateral and heading error convergence" width="760"></p>
+<p align="center"><img src="02_PID_Kanayama/results/error_plot.png" alt="Kanayama lateral and heading error convergence" width="820"></p>
+
+The Kanayama tracking law stabilizes the pose error of a unicycle relative to a time-varying reference. Global position error is rotated into the robot frame, giving longitudinal, lateral, and heading errors $(e_x, e_y, e_\theta)$. The controller applies
+$v = v_r\cos(e_\theta) + K_xe_x$ and $\omega = \omega_r + v_r(K_ye_y + K_\theta\sin(e_\theta))$.
+
+The simulation starts from a substantial position and heading offset. The animation shows recovery onto the trajectory; the recorded lateral and heading errors converge to zero under the implemented gains.
+
+`cd 02_PID_Kanayama && uv run main.py`
 
 ### Model predictive control — Kong et al. (2015)
 
-<table>
-  <tr>
-    <td width="50%" align="center"><strong>Low speed: success</strong></td>
-    <td width="50%" align="center"><strong>High speed: model failure</strong></td>
-  </tr>
-  <tr>
-    <td align="center"><img src="03_MPC_Kong/results/success.gif" alt="Kinematic MPC successfully tracking at low speed" width="420"></td>
-    <td align="center"><img src="03_MPC_Kong/results/drift.gif" alt="Kinematic MPC drifting at high speed" width="420"></td>
-  </tr>
-</table>
+**Low-speed dynamic simulation**
 
-The controller is identical in both runs: a 10-step, 0.1-second horizon linearized from a four-state kinematic bicycle model, with acceleration limited to −1.5/+1.0 m/s² and steering to ±37°.
+<p align="center"><img src="03_MPC_Kong/results/success.gif" alt="Kinematic MPC successfully tracking a dynamic vehicle at low speed" width="680"></p>
 
-- **Why the slow run works:** the 40-second reference travels at about 3.1–6.4 m/s. Slip remains small enough that the kinematic prediction approximates the dynamic Pacejka-tire simulation; saved mean position error is about 0.20 m.
-- **Why the fast run fails:** the same curve is compressed into 10 seconds, making it four times faster—about 12.3–25.8 m/s. The simulated car develops lateral velocity and yaw dynamics, while Pacejka tire forces saturate and the vehicle understeers. The MPC still predicts with a model that has no tire-force, lateral-velocity, or yaw-rate states, so it cannot foresee that loss of lateral authority and tracking error compounds.
+**High-speed dynamic simulation**
+
+<p align="center"><img src="03_MPC_Kong/results/drift.gif" alt="Kinematic MPC drifting when controlling a dynamic vehicle at high speed" width="680"></p>
+
+<p align="center"><img src="03_MPC_Kong/results/fig_error.png" alt="Kinematic and low-speed dynamic MPC tracking error" width="820"></p>
+
+Model predictive control repeatedly solves a finite-horizon optimization problem, applies the first control input, then replans from the measured state. This implementation uses a 10-step, 0.1-second horizon. It numerically linearizes a four-state kinematic bicycle model along the reference and minimizes state error, input error, and input-rate change subject to acceleration limits of −1.5/+1.0 m/s² and steering limits of ±37°.
+
+Both animations use the same MPC and a six-state dynamic bicycle plant with Pacejka lateral tire forces. In the successful run, the 40-second reference travels at approximately 3.1–6.4 m/s; lateral slip remains small enough that the kinematic prediction is accurate, producing about 0.20 m mean position error. In the failure run, the same curve is compressed into 10 seconds and the reference speed rises to approximately 12.3–25.8 m/s. Lateral velocity and yaw-rate dynamics become significant, while the tire forces saturate and produce understeer. Because those states and force limits are absent from the MPC prediction model, the optimizer requests motion the simulated vehicle cannot generate and the tracking error diverges.
 
 `cd 03_MPC_Kong && uv run main.py`
 
@@ -83,43 +93,35 @@ The controller is identical in both runs: a 10-step, 0.1-second horizon lineariz
 
 ### DQN / Double DQN — Mnih et al. (2015), van Hasselt et al. (2015)
 
-<table>
-  <tr>
-    <td width="46%" align="center"><img src="04_DQN_Minh/results/progress_50M.gif" alt="Double DQN agent playing Atari Breakout" height="300"></td>
-    <td><strong>Learn which joystick action is worth most—directly from pixels.</strong><br><br>Four processed frames give the agent motion. A CNN estimates action values; one million replay slots break temporal correlation; a separate target network stabilizes learning.<br><br>Double DQN selects the next action with the online network but evaluates it with the target network, reducing optimistic value estimates. Saved checkpoints expose learning, degradation, and recovery rather than only the best run.<br><br><code>cd 04_DQN_Minh && uv run main.py</code></td>
-  </tr>
-</table>
+<p align="center"><img src="04_DQN_Minh/results/progress_50M.gif" alt="Double DQN agent playing Atari Breakout" height="420"></p>
 
-<table>
-  <tr>
-    <td width="50%" align="center"><strong>Successful run</strong></td>
-    <td width="50%" align="center"><strong>Failed and unstable runs</strong></td>
-  </tr>
-  <tr>
-    <td><img src="04_DQN_Minh/results/breakout.png" alt="Double DQN Breakout learning curve" width="100%"></td>
-    <td><img src="04_DQN_Minh/results/failed_runs.png" alt="DQN failed and unstable training curves" width="100%"></td>
-  </tr>
-</table>
+<p align="center"><img src="04_DQN_Minh/results/breakout.png" alt="Double DQN Breakout learning curve" width="820"></p>
+
+<p align="center"><img src="04_DQN_Minh/results/failed_runs.png" alt="DQN failed and unstable training curves" width="820"></p>
+
+DQN approximates the action-value function $Q(s,a)$ from image observations and acts $\epsilon$-greedily with respect to those estimates. The Atari pipeline downsamples to 84×84 grayscale, repeats each selected action for four frames, stacks four observations, and clips rewards to their sign. Training begins after 50,000 transitions, samples batches from a one-million-transition replay buffer, updates every four environment steps, and synchronizes a separate target network every 10,000 steps.
+
+The target uses Double DQN: the online network selects the maximizing next action, while the target network evaluates that action. This decoupling reduces maximization bias. The retained curves show both a run that learns useful Breakout behaviour and runs that diverge or remain unstable, documenting sensitivity across long off-policy training.
+
+`cd 04_DQN_Minh && uv run main.py`
 
 ### PPO — Schulman et al. (2017)
 
-<table>
-  <tr>
-    <td width="46%" align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Atari Breakout" height="300"></td>
-    <td><strong>Improve a policy without letting one update move it too far.</strong><br><br>The agent collects fixed-length rollouts, uses generalized advantage estimation to assign credit, then reuses each batch for clipped policy updates. CNN policies handle Atari frames; Gaussian policies handle continuous actions.<br><br>Saved reproduction runs reach ~373 average return on Breakout and ~2700 on HalfCheetah—comparable to a strong reference implementation, not paper-beating.<br><br><code>cd 06_PPO_Schulman && uv run main.py</code></td>
-  </tr>
-</table>
+<p align="center"><img src="06_PPO_Schulman/results/breakout_gameplay.gif" alt="PPO agent playing Atari Breakout" height="420"></p>
 
-<table>
-  <tr>
-    <td width="50%" align="center"><strong>Breakout — 10M steps</strong></td>
-    <td width="50%" align="center"><strong>HalfCheetah — 1M steps</strong></td>
-  </tr>
-  <tr>
-    <td><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="100%"></td>
-    <td><img src="06_PPO_Schulman/results/halfcheetah.png" alt="PPO HalfCheetah learning curve" width="100%"></td>
-  </tr>
-</table>
+**Breakout — 10M steps**
+
+<p align="center"><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="820"></p>
+
+**HalfCheetah — 1M steps**
+
+<p align="center"><img src="06_PPO_Schulman/results/halfcheetah.png" alt="PPO HalfCheetah learning curve" width="820"></p>
+
+PPO is an on-policy actor–critic method. It estimates advantages with generalized advantage estimation and optimizes the clipped surrogate objective $\min(r_tA_t, \operatorname{clip}(r_t, 1-\epsilon, 1+\epsilon)A_t)$, limiting how far the updated policy can move from the policy that collected each rollout.
+
+The Atari configuration collects 128-step rollouts from eight vectorized environments, shares a Nature-style CNN between the categorical actor and critic, and performs four optimization epochs per batch. The continuous-control configuration uses separate MLP backbones and a Gaussian action head. Saved reproduction runs reach approximately 373 average return on Breakout and 2700 on HalfCheetah; these are comparable to a strong reference implementation rather than claims of outperforming the paper.
+
+`cd 06_PPO_Schulman && uv run main.py`
 
 ## Quick Start / Reproducibility
 
