@@ -130,7 +130,7 @@ Training samples batches from that buffer and adjusts the predicted value toward
 
 <p align="center"><strong>Trained Breakout policy</strong><br><img src="06_PPO_Schulman/results/breakout_gameplay_compact.gif" alt="PPO agent playing Atari Breakout" height="380"></p>
 
-<p align="center"><strong>Learning curve over 10M training steps</strong><br><img src="06_PPO_Schulman/results/breakout_final.png" alt="PPO Breakout learning curve" width="760"></p>
+<p align="center"><strong>Training diagnostics over 10M steps</strong><br><img src="06_PPO_Schulman/results/breakout_final_losses.png" alt="PPO Breakout episodic return, policy loss, value loss, total loss, and entropy" width="760"></p>
 
 PPO learns a policy $\pi(a\mid s)$. Given the current state $s$, it outputs a probability for each possible action $a$. In Breakout, a CNN reads stacked image frames and the actor samples an action from those probabilities. A critic processes the same state and estimates how much future reward remains available from it.
 
